@@ -16,9 +16,15 @@ spring:
 
 indexing-settings:
   sites:
-    - url: https://www.lenta.ru
-      name: Лента.ру
-    - url: https://www.skillbox.ru
-      name: Skillbox
+    - url: https://www.svetlovka.ru/
+      name: Svetlovka.ru
+#    - url: https://skillbox.ru
+#      name: Skillbox
     - url: https://www.playback.ru
       name: PlayBack.Ru
+
+jsoup-settings:
+  userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36
+  ignoreHttpErrors: true
+  ignoreContentType: true
+  referrer: http://www.google.com

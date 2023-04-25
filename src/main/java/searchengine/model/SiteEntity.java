@@ -1,10 +1,20 @@
 package searchengine.model;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
 import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "site")
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode(exclude = "pages")
 public class SiteEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,51 +36,10 @@ public class SiteEntity {
     @Column(columnDefinition = "VARCHAR(255) NOT NULL")
     private String name;
 
-
-    public SiteEntity() {
-    }
-
-    public StatusType getStatus() {
-        return status;
-    }
-
-    public void setStatus(StatusType status) {
-        this.status = status;
-    }
-
-    public Date getStatusTime() {
-        return statusTime;
-    }
-
-    public void setStatusTime(Date statusTime) {
-        this.statusTime = statusTime;
-    }
-
-    public String getLastError() {
-        return lastError;
-    }
-
-    public void setLastError(String lastError) {
-        this.lastError = lastError;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getId() {
-        return id;
-    }
+    @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Fetch(value = FetchMode.SELECT)
+    private List<PageEntity> pages;
 }
+
+
+

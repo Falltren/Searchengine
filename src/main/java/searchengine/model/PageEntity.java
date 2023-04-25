@@ -1,16 +1,22 @@
 package searchengine.model;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import javax.persistence.*;
+
 
 @Entity
 @Table(name = "page")
+@Data
+@NoArgsConstructor
 public class PageEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.REFRESH, fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private SiteEntity siteEntity;
     @Column(columnDefinition = "TEXT NOT NULL, Index (path(512))")

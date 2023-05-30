@@ -1,10 +1,9 @@
 package searchengine.model;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -12,7 +11,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "site")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(exclude = "pages")
 public class SiteEntity {
@@ -37,7 +37,7 @@ public class SiteEntity {
     private String name;
 
     @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Fetch(value = FetchMode.SELECT)
+//    @Fetch(value = FetchMode.SELECT)
     private List<PageEntity> pages;
 }
 

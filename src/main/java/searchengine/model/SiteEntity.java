@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name = "site")
+@Table(name = "sites")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -39,6 +39,9 @@ public class SiteEntity {
     @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 //    @Fetch(value = FetchMode.SELECT)
     private List<PageEntity> pages;
+
+    @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<LemmaEntity> lemmas;
 }
 
 

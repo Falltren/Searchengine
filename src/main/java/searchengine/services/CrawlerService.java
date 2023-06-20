@@ -36,6 +36,8 @@ public class CrawlerService extends RecursiveAction {
 
     private PageService pageService;
 
+    private MorphologyService morphologyService;
+
     public CrawlerService() {
     }
 
@@ -73,6 +75,10 @@ public class CrawlerService extends RecursiveAction {
         this.siteRepository = siteRepository;
     }
 
+    @Autowired
+    public void setMorphologyService(MorphologyService morphologyService){
+        this.morphologyService = morphologyService;
+    }
     public static Set<String> getUniqueLinks() {
         return uniqueLinks;
     }
@@ -83,7 +89,8 @@ public class CrawlerService extends RecursiveAction {
         try {
             Thread.sleep(100);
             if (isNeedStop) {
-                Thread.currentThread().interrupt();
+//                Thread.currentThread().interrupt();
+                return;
             }
             Connection connection = getConnection(url);
             Document document = connection
@@ -125,7 +132,7 @@ public class CrawlerService extends RecursiveAction {
         return Jsoup.connect(url);
     }
 
-    private String getRelativeLink(String absoluteLink) {
+    public String getRelativeLink(String absoluteLink) {
         return absoluteLink.substring(site.getUrl().length() - 1);
     }
 }

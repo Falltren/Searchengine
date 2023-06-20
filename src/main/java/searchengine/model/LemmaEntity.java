@@ -7,13 +7,12 @@ import lombok.Setter;
 import javax.persistence.*;
 import java.util.List;
 
-
-@Entity
-@Table(name = "pages")
-@Getter
+@Table(name = "lemmas")
 @Setter
+@Getter
 @NoArgsConstructor
-public class PageEntity {
+@Entity
+public class LemmaEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,16 +22,12 @@ public class PageEntity {
     @JoinColumn(name = "site_id", nullable = false)
     private SiteEntity siteEntity;
 
-    @Column(columnDefinition = "TEXT NOT NULL, UNIQUE KEY pathIndex (path(256), site_id)")
-    private String path;
+    @Column(columnDefinition = "VARCHAR(255) NOT NULL")
+    private String lemma;
 
     @Column(nullable = false)
-    private Integer code;
+    private Integer frequency;
 
-    @Column(columnDefinition = "MEDIUMTEXT NOT NULL")
-    private String content;
-
-    @OneToMany(mappedBy = "pageEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "lemmaEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<IndexEntity> indexes;
-
 }

@@ -2,9 +2,7 @@ package searchengine.controllers;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import searchengine.dto.response.FailIndexing;
 import searchengine.dto.response.IndexingResponse;
 import searchengine.dto.response.SuccessfulIndexation;
@@ -44,5 +42,16 @@ public class ApiController {
         }
         indexingService.stopIndexing();
         return ResponseEntity.ok().body(new SuccessfulIndexation());
+    }
+
+    @PostMapping("indexPage")
+    public ResponseEntity<IndexingResponse> indexingOnePage(@RequestParam String url){
+        if (indexingService.isPageFromSiteList(url).getUrl() == null){
+            return ResponseEntity.badRequest().body(new FailIndexing(
+                    "Данная страница находится за пределами сайтов, " +
+                    "указанных в конфигурационном файле"));
+        }
+        indexingService.indexingOnePage(url);
+        return ResponseEntity.ok(new SuccessfulIndexation());
     }
 }

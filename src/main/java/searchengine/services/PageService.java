@@ -2,6 +2,7 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.PageRepository;
@@ -12,8 +13,7 @@ public class PageService {
 
     private final PageRepository pageRepository;
 
-    public void saveNewPage(SiteEntity siteEntity, String path, int code, String content) {
-        PageEntity pageEntity = new PageEntity();
+    public void saveNewPage(PageEntity pageEntity, SiteEntity siteEntity, String path, int code, String content) {
         pageEntity.setSiteEntity(siteEntity);
         pageEntity.setPath(path);
         pageEntity.setCode(code);

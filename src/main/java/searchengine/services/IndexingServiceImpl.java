@@ -8,6 +8,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
+import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
 import searchengine.utils.ForkJoinManager;
@@ -88,28 +89,29 @@ public class IndexingServiceImpl implements IndexingService {
 
     public void indexingOnePage(String url) {
         new Thread(() -> {
-        Site site = isPageFromSiteList(url);
-        if (site.getUrl() != null) {
-            try {
-                Connection connection = Jsoup.connect(url);
-                Document document = connection
-                        .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                                "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
-                        .ignoreHttpErrors(true)
-                        .ignoreContentType(true)
-                        .referrer("http://www.google.com")
-                        .get();
-                String contentWithoutHtmlTags = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
-                String content = morphologyService.cleaningTextFromDigital(
-                        morphologyService.deletePunctuationMark(contentWithoutHtmlTags));
-                SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).get();
-                pageService.saveNewPage(siteEntity, crawlerService.getRelativeLink(url),
-                        connection.response().statusCode(), content);
+            Site site = isPageFromSiteList(url);
+            if (site.getUrl() != null) {
+                try {
+                    Connection connection = Jsoup.connect(url);
+                    Document document = connection
+                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+                                    "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
+                            .ignoreHttpErrors(true)
+                            .ignoreContentType(true)
+                            .referrer("http://www.google.com")
+                            .get();
+                    String contentWithoutHtmlTags = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
+                    String content = morphologyService.cleaningText(
+                            morphologyService.cleaningText(contentWithoutHtmlTags));
+                    SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).get();
+                    PageEntity pageEntity = new PageEntity();
+                    pageService.saveNewPage(pageEntity, siteEntity, crawlerService.getRelativeLink(url),
+                            connection.response().statusCode(), content);
 
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        }
         }).start();
     }
 

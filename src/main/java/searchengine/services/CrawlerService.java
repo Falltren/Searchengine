@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import searchengine.config.Site;
+import searchengine.model.LemmaEntity;
+import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.SiteRepository;
 
@@ -38,14 +40,22 @@ public class CrawlerService extends RecursiveAction {
 
     private MorphologyService morphologyService;
 
+    private LemmaService lemmaService;
+
+    private IndexService indexService;
+
     public CrawlerService() {
     }
 
-    public CrawlerService(String url, Site site, SiteRepository siteRepository, PageService pageService) {
+    public CrawlerService(String url, Site site, SiteRepository siteRepository, PageService pageService,
+                          MorphologyService morphologyService, LemmaService lemmaService, IndexService indexService) {
         this.url = url;
         CrawlerService.site = site;
         this.siteRepository = siteRepository;
         this.pageService = pageService;
+        this.morphologyService = morphologyService;
+        this.lemmaService = lemmaService;
+        this.indexService = indexService;
     }
 
     public static void setSite(Site site) {
@@ -76,9 +86,20 @@ public class CrawlerService extends RecursiveAction {
     }
 
     @Autowired
-    public void setMorphologyService(MorphologyService morphologyService){
+    public void setMorphologyService(MorphologyService morphologyService) {
         this.morphologyService = morphologyService;
     }
+
+    @Autowired
+    public void setLemmaService(LemmaService lemmaService) {
+        this.lemmaService = lemmaService;
+    }
+
+    @Autowired
+    public void setIndexService(IndexService indexService) {
+        this.indexService = indexService;
+    }
+
     public static Set<String> getUniqueLinks() {
         return uniqueLinks;
     }
@@ -92,23 +113,29 @@ public class CrawlerService extends RecursiveAction {
 //                Thread.currentThread().interrupt();
                 return;
             }
-            Connection connection = getConnection(url);
+            Connection connection = getConnection(url).timeout(120000);
             Document document = connection
                     .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
                             "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
                     .ignoreHttpErrors(true)
                     .ignoreContentType(true)
+                    .followRedirects(false)
                     .referrer("http://www.google.com")
                     .get();
             Elements elements = document.select("a");
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
                 if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink) && uniqueLinks.add(newAbsolutLink)) {
-                    CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService);
+                    CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService);
                     task.fork();
                     crawlerServiceList.add(task);
                     SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl()).orElseThrow();
-                    pageService.saveNewPage(siteEntity, getRelativeLink(newAbsolutLink), connection.response().statusCode(), document.outerHtml());
+                    String content = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
+                    PageEntity pageEntity = new PageEntity();
+                    pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(newAbsolutLink), connection.response().statusCode(), content);
+                    Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
+                    Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
+                    indexService.addIndex(pageEntity, lemmasWithRank);
                     System.out.println(newAbsolutLink);
                 }
             }

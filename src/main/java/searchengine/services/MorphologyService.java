@@ -21,9 +21,6 @@ public class MorphologyService {
                 word.contains("|p ЧАСТ");
     }
 
-    public String deletePunctuationMark(String text) {
-        return text.toLowerCase().replaceAll("\\p{Punct}", "");
-    }
 
     private String getWordFromMorphInfo(String word) {
         return word.substring(0, word.indexOf("|"));
@@ -33,15 +30,20 @@ public class MorphologyService {
         return Jsoup.clean(content, Safelist.none());
     }
 
-    public String cleaningTextFromDigital(String text) {
-        return text.replaceAll("\\d+", "");
+    public String cleaningText(String text) {
+        return text.toLowerCase()
+                .replaceAll("[^а-яё]+", " ")
+                .replaceAll("ё", "е")
+                .replaceAll("\\p{Punct}", " ")
+                .replaceAll("\\s+", " ")
+                .strip();
     }
 
     public Map<String, Integer> getLemmas(String text) {
         Map<String, Integer> lemmas = new HashMap<>();
-        for (String word : cleaningTextFromDigital(deletePunctuationMark(text)).split("\\s+")) {
+        for (String word : cleaningText(text).split("\\s+")) {
             for (String w : luceneMorphology.getMorphInfo(word)) {
-                if (!isAuxiliaryPartOfSpeech(w)) {
+                if (!isAuxiliaryPartOfSpeech(w) && word.length() > 1) {
                     String key = getWordFromMorphInfo(w);
                     if (lemmas.containsKey(key)) {
                         lemmas.put(key, lemmas.get(key) + 1);

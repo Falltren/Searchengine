@@ -19,7 +19,7 @@ public class PageEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private SiteEntity siteEntity;
 
@@ -32,7 +32,7 @@ public class PageEntity {
     @Column(columnDefinition = "MEDIUMTEXT NOT NULL")
     private String content;
 
-    @OneToMany(mappedBy = "pageEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "pageEntity", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private List<IndexEntity> indexes;
 
 }

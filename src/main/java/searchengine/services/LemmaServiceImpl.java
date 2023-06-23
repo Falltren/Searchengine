@@ -2,11 +2,11 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import searchengine.config.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.LemmaRepository;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,12 +24,25 @@ public class LemmaServiceImpl implements LemmaService {
         return lemmaRepository.findAllLemmaEntityBySiteEntity(siteEntity);
     }
 
-    public void addLemma(String lemma, SiteEntity siteEntity) {
-        Map<String, Integer> map = morphologyService.getLemmas(lemma);
-        for (String word : map.keySet()) {
-            System.out.println("ok");
+    public synchronized Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
+        LemmaEntity lemmaEntity;
+        Map<LemmaEntity, Integer> map = new HashMap<>();
+        for (String word : lemmas.keySet()) {
+            Optional<LemmaEntity> optionalLemma = findLemmaEntityByLemmaAndSiteEntity(word, siteEntity);
 
+            if (optionalLemma.isPresent()) {
+                lemmaEntity = optionalLemma.get();
+                lemmaEntity.setFrequency(lemmaEntity.getFrequency() + 1);
+            } else {
+                lemmaEntity = new LemmaEntity();
+                lemmaEntity.setSiteEntity(siteEntity);
+                lemmaEntity.setFrequency(1);
+                lemmaEntity.setLemma(word);
+            }
+            lemmaRepository.save(lemmaEntity);
+            map.put(lemmaEntity, lemmas.get(word));
         }
+        return map;
     }
 
     public Optional<LemmaEntity> findLemmaEntityByLemmaAndSiteEntity(String lemma, SiteEntity siteEntity) {

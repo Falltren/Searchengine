@@ -18,16 +18,16 @@ public class LemmaEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private SiteEntity siteEntity;
 
-    @Column(columnDefinition = "VARCHAR(255) NOT NULL")
+    @Column(columnDefinition = "VARCHAR(255) NOT NULL, UNIQUE KEY lemmaIndex (lemma, site_id)")
     private String lemma;
 
     @Column(nullable = false)
     private Integer frequency;
 
-    @OneToMany(mappedBy = "lemmaEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "lemmaEntity", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private List<IndexEntity> indexes;
 }

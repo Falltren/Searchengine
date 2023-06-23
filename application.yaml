@@ -12,11 +12,11 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
 
 indexing-settings:
   sites:
-    - url: https://nopaper.ru
+    - url: https://nopaper.ru/
       name: NoPaper.ru
     - url: https://www.svetlovka.ru/
       name: Svetlovka.ru

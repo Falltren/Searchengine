@@ -18,12 +18,12 @@ indexing-settings:
   sites:
     - url: https://nopaper.ru/
       name: NoPaper.ru
-    - url: https://www.svetlovka.ru/
-      name: Svetlovka.ru
+#    - url: https://www.svetlovka.ru/
+#      name: Svetlovka.ru
 #    - url: https://skillbox.ru
 #      name: Skillbox
-#    - url: https://www.playback.ru/
-#      name: PlayBack.ru
+    - url: https://www.playback.ru/
+      name: PlayBack.ru
 #    - url: https://et-cetera.ru/mobile/
 #      name: EtCeteraMobile
 #    - url: https://nikoartgallery.com/
@@ -31,7 +31,9 @@ indexing-settings:
 
 
 jsoup-settings:
+  timeout: 120000
   userAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36
   ignoreHttpErrors: true
   ignoreContentType: true
+  followRedirects: false
   referrer: http://www.google.com

@@ -15,8 +15,12 @@ import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.SiteRepository;
+import searchengine.utils.JsoupConnection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
 
@@ -44,11 +48,14 @@ public class CrawlerService extends RecursiveAction {
 
     private IndexService indexService;
 
+    private JsoupConnection jsoupConnection;
+
     public CrawlerService() {
     }
 
     public CrawlerService(String url, Site site, SiteRepository siteRepository, PageService pageService,
-                          MorphologyService morphologyService, LemmaService lemmaService, IndexService indexService) {
+                          MorphologyService morphologyService, LemmaService lemmaService, IndexService indexService,
+                          JsoupConnection jsoupConnection) {
         this.url = url;
         CrawlerService.site = site;
         this.siteRepository = siteRepository;
@@ -56,6 +63,7 @@ public class CrawlerService extends RecursiveAction {
         this.morphologyService = morphologyService;
         this.lemmaService = lemmaService;
         this.indexService = indexService;
+        this.jsoupConnection = jsoupConnection;
     }
 
     public static void setSite(Site site) {
@@ -100,6 +108,11 @@ public class CrawlerService extends RecursiveAction {
         this.indexService = indexService;
     }
 
+    @Autowired
+    public void setJsoupConnection(JsoupConnection jsoupConnection) {
+        this.jsoupConnection = jsoupConnection;
+    }
+
     public static Set<String> getUniqueLinks() {
         return uniqueLinks;
     }
@@ -113,26 +126,29 @@ public class CrawlerService extends RecursiveAction {
 //                Thread.currentThread().interrupt();
                 return;
             }
-            Connection connection = getConnection(url).timeout(120000);
-            Document document = connection
-                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                            "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
-                    .ignoreHttpErrors(true)
-                    .ignoreContentType(true)
-                    .followRedirects(false)
-                    .referrer("http://www.google.com")
-                    .get();
+            Connection connection = jsoupConnection.getConnection(url);
+            Document document = jsoupConnection.getDocument(connection);
+//                    connection
+//                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+//                            "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
+//                    .ignoreHttpErrors(true)
+//                    .ignoreContentType(true)
+//                    .followRedirects(false)
+//                    .referrer("http://www.google.com")
+//                    .get();
             Elements elements = document.select("a");
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
                 if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink) && uniqueLinks.add(newAbsolutLink)) {
-                    CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService);
+                    CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService, jsoupConnection);
                     task.fork();
                     crawlerServiceList.add(task);
                     SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl()).orElseThrow();
                     String content = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
                     PageEntity pageEntity = new PageEntity();
                     pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(newAbsolutLink), connection.response().statusCode(), content);
+//                    siteEntity.setStatusTime(new Date());
+//                    siteRepository.save(siteEntity);
                     Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
                     Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
                     indexService.addIndex(pageEntity, lemmasWithRank);

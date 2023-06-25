@@ -1,6 +1,8 @@
 package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.SiteEntity;
@@ -21,8 +23,24 @@ public class SiteService {
         siteRepository.deleteByUrl(url);
     }
 
+//    @Modifying
+//    @Transactional
+//    @Query(value = "DELETE FROM sites s WHERE s.url = :url", nativeQuery = true)
+//    public void deleteSiteByUrl(String url) {
+//    }
+
     public Optional<SiteEntity> findSiteByUrl(String url) {
         return siteRepository.findByUrl(url);
+    }
+
+    public int findPagesCountByUrl(String url) {
+        Optional<SiteEntity> optionalSiteEntity = findSiteByUrl(url);
+        return optionalSiteEntity.map(siteEntity -> siteEntity.getPages().size()).orElse(0);
+    }
+
+    public int findLemmasCountByUrl(String url) {
+        Optional<SiteEntity> optionalSiteEntity = findSiteByUrl(url);
+        return optionalSiteEntity.map(siteEntity -> siteEntity.getLemmas().size()).orElse(0);
     }
 
     public void saveNewSite(String url, String name) {

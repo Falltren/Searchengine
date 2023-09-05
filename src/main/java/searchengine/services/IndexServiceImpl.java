@@ -7,6 +7,7 @@ import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.repository.IndexRepository;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -24,4 +25,11 @@ public class IndexServiceImpl implements IndexService {
             indexRepository.save(indexEntity);
         }
     }
+
+    @Override
+    public List<IndexEntity> getIndexList(List<LemmaEntity> lemmas) {
+        return indexRepository.findListIndexesByLemmaEntityIn(lemmas);
+    }
+
+
 }

@@ -8,14 +8,17 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
+import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
 import searchengine.utils.ForkJoinManager;
+import searchengine.utils.JsoupConnection;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
 
 @Service
@@ -30,9 +33,15 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final PageService pageService;
 
+    private final LemmaService lemmaService;
+
+    private final IndexService indexService;
+
     private final MorphologyService morphologyService;
 
     private final CrawlerService crawlerService;
+
+    private final JsoupConnection jsoupConnection;
 
     @Override
     public void startIndexing() {
@@ -91,23 +100,18 @@ public class IndexingServiceImpl implements IndexingService {
         new Thread(() -> {
             Site site = isPageFromSiteList(url);
             if (site.getUrl() != null) {
+                SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).get();
+                String path = url.substring(site.getUrl().length() - 1); //need changing on service
+                pageService.deletePageEntityBySiteEntityAndPath(siteEntity, path);
                 try {
-                    Connection connection = Jsoup.connect(url);
-                    Document document = connection
-                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                                    "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
-                            .ignoreHttpErrors(true)
-                            .ignoreContentType(true)
-                            .referrer("http://www.google.com")
-                            .get();
-                    String contentWithoutHtmlTags = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
-                    String content = morphologyService.cleaningText(
-                            morphologyService.cleaningText(contentWithoutHtmlTags));
-                    SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).get();
+                    Connection connection = jsoupConnection.getConnection(url);
+                    Document document = jsoupConnection.getDocument(connection);
+                    String content = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
                     PageEntity pageEntity = new PageEntity();
-                    pageService.saveNewPage(pageEntity, siteEntity, crawlerService.getRelativeLink(url),
-                            connection.response().statusCode(), content);
-
+                    pageService.saveNewPage(pageEntity, siteEntity, path, connection.response().statusCode(), content);
+                    Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
+                    Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
+                    indexService.addIndex(pageEntity, lemmasWithRank);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

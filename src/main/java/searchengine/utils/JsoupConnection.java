@@ -17,15 +17,10 @@ import java.io.IOException;
 public class JsoupConnection {
 
     private int timeout;
-
     private String userAgent;
-
     private boolean ignoreHttpErrors;
-
     private boolean ignoreContentType;
-
     private boolean followRedirects;
-
     private String referrer;
 
     public Document getDocument(Connection connection) throws IOException {

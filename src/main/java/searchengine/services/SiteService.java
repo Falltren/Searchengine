@@ -5,12 +5,13 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import searchengine.config.Site;
+import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
 import searchengine.repository.SiteRepository;
 
-import java.util.Date;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -59,4 +60,9 @@ public class SiteService {
     public boolean isIndexing() {
         return siteRepository.findByStatus(StatusType.INDEXING).size() > 0;
     }
+
+    public List<SiteEntity> getIndexedSites(){
+        return siteRepository.findByStatus(StatusType.INDEXING);
+    }
+
 }

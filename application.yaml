@@ -14,12 +14,17 @@ spring:
       ddl-auto: update
     show-sql: false
 
+#logging:
+#  level:
+#    jdbc:
+#      sqlonly: DEBUG
+
 indexing-settings:
   sites:
     - url: https://nopaper.ru/
       name: NoPaper.ru
-#    - url: https://www.svetlovka.ru/
-#      name: Svetlovka.ru
+    - url: https://www.svetlovka.ru/
+      name: Svetlovka.ru
 #    - url: https://skillbox.ru
 #      name: Skillbox
     - url: https://www.playback.ru/

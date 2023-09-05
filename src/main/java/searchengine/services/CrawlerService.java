@@ -3,7 +3,6 @@ package searchengine.services;
 import lombok.Getter;
 import lombok.Setter;
 import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -123,19 +122,11 @@ public class CrawlerService extends RecursiveAction {
         try {
             Thread.sleep(100);
             if (isNeedStop) {
-//                Thread.currentThread().interrupt();
+                Thread.currentThread().interrupt();
                 return;
             }
             Connection connection = jsoupConnection.getConnection(url);
             Document document = jsoupConnection.getDocument(connection);
-//                    connection
-//                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-//                            "(KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36")
-//                    .ignoreHttpErrors(true)
-//                    .ignoreContentType(true)
-//                    .followRedirects(false)
-//                    .referrer("http://www.google.com")
-//                    .get();
             Elements elements = document.select("a");
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
@@ -169,10 +160,6 @@ public class CrawlerService extends RecursiveAction {
         }
         String regex = "(.*\\.[A-Za-z\\d]{3,4})|(.*#.*)";
         return link.matches(regex);
-    }
-
-    private Connection getConnection(String url) {
-        return Jsoup.connect(url);
     }
 
     public String getRelativeLink(String absoluteLink) {

@@ -3,6 +3,7 @@ package searchengine.controllers;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import searchengine.config.Site;
 import searchengine.dto.response.FailIndexing;
 import searchengine.dto.response.IndexingResponse;
 import searchengine.dto.response.SuccessfulIndexation;
@@ -37,21 +38,29 @@ public class ApiController {
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<IndexingResponse> stopIndexing() {
-        if (!siteService.isIndexing()){
+        if (!siteService.isIndexing()) {
             return ResponseEntity.badRequest().body(new FailIndexing("Индексация не запущена"));
         }
         indexingService.stopIndexing();
         return ResponseEntity.ok().body(new SuccessfulIndexation());
     }
 
-    @PostMapping("indexPage")
-    public ResponseEntity<IndexingResponse> indexingOnePage(@RequestParam String url){
-        if (indexingService.isPageFromSiteList(url).getUrl() == null){
+    @PostMapping("/indexPage")
+    public ResponseEntity<IndexingResponse> indexingOnePage(@RequestParam String url) {
+        if (indexingService.isPageFromSiteList(url).getUrl() == null) {
             return ResponseEntity.badRequest().body(new FailIndexing(
                     "Данная страница находится за пределами сайтов, " +
-                    "указанных в конфигурационном файле"));
+                            "указанных в конфигурационном файле"));
         }
         indexingService.indexingOnePage(url);
         return ResponseEntity.ok(new SuccessfulIndexation());
     }
+
+//    @GetMapping("/search")
+//    public ResponseEntity<IndexingResponse> search(@RequestParam String query,
+//                                                   @RequestParam(required = false) String site,
+//                                                   @RequestParam(required = false, defaultValue = "0") Integer offset,
+//                                                   @RequestParam(required = false, defaultValue = "20") Integer limit) {
+//
+//    }
 }

@@ -6,10 +6,7 @@ import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.LemmaRepository;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -17,7 +14,7 @@ public class LemmaServiceImpl implements LemmaService {
 
     private final LemmaRepository lemmaRepository;
 
-    private final MorphologyService morphologyService;
+//    private final MorphologyService morphologyService;
 
     @Override
     public List<LemmaEntity> findAllLemmaEntityBySiteEntity(SiteEntity siteEntity) {
@@ -29,7 +26,6 @@ public class LemmaServiceImpl implements LemmaService {
         Map<LemmaEntity, Integer> map = new HashMap<>();
         for (String word : lemmas.keySet()) {
             Optional<LemmaEntity> optionalLemma = findLemmaEntityByLemmaAndSiteEntity(word, siteEntity);
-
             if (optionalLemma.isPresent()) {
                 lemmaEntity = optionalLemma.get();
                 lemmaEntity.setFrequency(lemmaEntity.getFrequency() + 1);
@@ -49,5 +45,8 @@ public class LemmaServiceImpl implements LemmaService {
         return lemmaRepository.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
     }
 
-
+    @Override
+    public List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String> lemmas) {
+        return lemmaRepository.findLemmaEntityBySiteEntityAndLemmaIn(siteEntity, lemmas);
+    }
 }

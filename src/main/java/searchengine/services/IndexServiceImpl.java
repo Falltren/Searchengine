@@ -2,6 +2,7 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
@@ -29,6 +30,11 @@ public class IndexServiceImpl implements IndexService {
     @Override
     public List<IndexEntity> getIndexList(List<LemmaEntity> lemmas) {
         return indexRepository.findListIndexesByLemmaEntityIn(lemmas);
+    }
+
+    @Override
+    public List<IndexEntity> getIndexesByLemma(LemmaEntity lemmaEntity) {
+        return indexRepository.findByLemmaEntity(lemmaEntity);
     }
 
 

@@ -6,10 +6,11 @@ spring:
     username: root
     password: 1012Benq86
     url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    charset: utf8mb4
   jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+#    properties:
+#      hibernate:
+#        dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
     show-sql: false
@@ -25,10 +26,10 @@ indexing-settings:
       name: NoPaper.ru
     - url: https://www.svetlovka.ru/
       name: Svetlovka.ru
-#    - url: https://skillbox.ru
+#    - url: https://skillbox.ru/
 #      name: Skillbox
-    - url: https://www.playback.ru/
-      name: PlayBack.ru
+#    - url: https://www.playback.ru/
+#      name: PlayBack.ru
 #    - url: https://et-cetera.ru/mobile/
 #      name: EtCeteraMobile
 #    - url: https://nikoartgallery.com/

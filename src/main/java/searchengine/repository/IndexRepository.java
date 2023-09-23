@@ -10,4 +10,5 @@ import java.util.List;
 public interface IndexRepository extends JpaRepository<IndexEntity, Integer> {
 
     List<IndexEntity> findListIndexesByLemmaEntityIn(List<LemmaEntity> lemmaEntities);
+    List<IndexEntity> findByLemmaEntity(LemmaEntity lemmaEntity);
 }

@@ -8,9 +8,12 @@ import searchengine.dto.response.FailIndexing;
 import searchengine.dto.response.IndexingResponse;
 import searchengine.dto.response.SuccessfulIndexation;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.model.SiteEntity;
 import searchengine.services.IndexingService;
 import searchengine.services.SiteService;
 import searchengine.services.StatisticsService;
+
+import java.awt.*;
 
 @RestController
 @RequestMapping("/api")

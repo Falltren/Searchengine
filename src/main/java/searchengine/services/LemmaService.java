@@ -17,6 +17,8 @@ public interface LemmaService {
 
     Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity);
 
-    List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String>lemmas);
+    List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String> lemmas);
+
+    
 
 }

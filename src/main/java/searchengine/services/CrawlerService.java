@@ -130,7 +130,7 @@ public class CrawlerService extends RecursiveAction {
             Elements elements = document.select("a");
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
-                if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink) && uniqueLinks.add(newAbsolutLink)) {
+                if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink) && uniqueLinks.add(newAbsolutLink.toLowerCase())) {
                     CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService, jsoupConnection);
                     task.fork();
                     crawlerServiceList.add(task);
@@ -140,9 +140,11 @@ public class CrawlerService extends RecursiveAction {
                     pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(newAbsolutLink), connection.response().statusCode(), content);
 //                    siteEntity.setStatusTime(new Date());
 //                    siteRepository.save(siteEntity);
+
                     Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
                     Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
                     indexService.addIndex(pageEntity, lemmasWithRank);
+
                     System.out.println(newAbsolutLink);
                 }
             }

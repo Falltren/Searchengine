@@ -43,6 +43,8 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final JsoupConnection jsoupConnection;
 
+
+
     @Override
     public void startIndexing() {
         new Thread(() -> {
@@ -82,6 +84,7 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public void stopIndexing() {
         new Thread(() -> {
+
             CrawlerService.stopCrawler();
             for (Site site : sitesList.getSites()) {
                 SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();

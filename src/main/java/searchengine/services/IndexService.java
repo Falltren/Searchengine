@@ -12,4 +12,6 @@ public interface IndexService {
     void addIndex(PageEntity pageEntity, Map<LemmaEntity, Integer> lemmasWithRank);
 
     List<IndexEntity> getIndexList(List<LemmaEntity>lemmas);
+
+    List<IndexEntity> getIndexesByLemma(LemmaEntity lemmaEntity);
 }

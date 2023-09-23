@@ -21,7 +21,7 @@ public class LemmaServiceImpl implements LemmaService {
         return lemmaRepository.findAllLemmaEntityBySiteEntity(siteEntity);
     }
 
-    public synchronized Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
+    public Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
         LemmaEntity lemmaEntity;
         Map<LemmaEntity, Integer> map = new HashMap<>();
         for (String word : lemmas.keySet()) {
@@ -47,6 +47,6 @@ public class LemmaServiceImpl implements LemmaService {
 
     @Override
     public List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String> lemmas) {
-        return lemmaRepository.findLemmaEntityBySiteEntityAndLemmaIn(siteEntity, lemmas);
+        return lemmaRepository.findBySiteEntityAndLemmaIn(siteEntity, lemmas);
     }
 }

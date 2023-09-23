@@ -2,15 +2,9 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import searchengine.dto.response.FailIndexing;
-import searchengine.dto.search.SearchData;
-import searchengine.model.LemmaEntity;
-import searchengine.model.SiteEntity;
+import searchengine.model.*;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,7 +12,6 @@ import java.util.stream.Collectors;
 public class SearchService {
 
     private final MorphologyService morphologyService;
-
     private final SiteService siteService;
     private final LemmaService lemmaService;
 
@@ -37,32 +30,42 @@ public class SearchService {
                 Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
     }
 
-    public List<SearchData> createSearch(String query, String site, Integer offset, Integer limit) {
-        Map<String, Integer> lemmasMap = getSortedLemmas(site, query);
-
-
-        return new ArrayList<>();
-    }
-
-    public String getRarestLemma(Map<String, Integer> lemmas){
-        return lemmas.entrySet().stream().findFirst().toString();
-    }
-
-    private List<SiteEntity> selectSite(String site){
-        List<SiteEntity> siteEntityList = siteService.getIndexedSites();
-        if (siteEntityList.isEmpty()){
-            throw new IllegalArgumentException(String.valueOf(new FailIndexing("Отсутствуют проиндексированные сайты")));
+    public List<PageEntity> findPages(String query, String site) {
+        List<PageEntity> pageEntities = new ArrayList<>();
+        for (SiteEntity siteEntity : selectSite(site)) {
+            List<String> lemmas = splitTextIntoLemmas(query);
+            List<LemmaEntity> lemmaEntities = lemmaService.findLemmasList(siteEntity, lemmas);
+            lemmaEntities.sort(Comparator.comparing(LemmaEntity::getFrequency));
+            List<IndexEntity> indexEntities = indexService.getIndexesByLemma(lemmaEntities.get(0));
+            pageEntities = indexEntities
+                    .stream()
+                    .map(IndexEntity::getPageEntity)
+                    .collect(Collectors.toList());
+            for (int i = 1; i < lemmaEntities.size(); i++) {
+                List<IndexEntity> indexes = indexService.getIndexesByLemma(lemmaEntities.get(i));
+                List<PageEntity> pages = indexes.stream().map(IndexEntity::getPageEntity).collect(Collectors.toList());
+                pageEntities = pageEntities.stream().filter(pages::contains).collect(Collectors.toList());
+            }
         }
-        if (site == null){
+        return pageEntities;
+    }
+
+    public void calculateRelevance(String query, String site) {
+        List<PageEntity> pageEntities = findPages(query, site);
+        if (pageEntities.size() > 0) {
+
+        }
+    }
+
+    private List<SiteEntity> selectSite(String site) {
+        List<SiteEntity> siteEntityList = siteService.getIndexedSites();
+        if (siteEntityList.isEmpty() || siteService.findSiteByUrl(site).orElseThrow().getStatus() != StatusType.INDEXED) {
+            throw new IllegalArgumentException("Отсутствуют проиндексированные сайты");
+        }
+        if (site == null) {
             return siteEntityList;
         } else {
             return siteEntityList.stream().filter(s -> s.getUrl().contains(site)).collect(Collectors.toList());
         }
     }
-
-
-
-
-
-
 }

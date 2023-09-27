@@ -7,9 +7,11 @@ import searchengine.config.Site;
 import searchengine.dto.response.FailIndexing;
 import searchengine.dto.response.IndexingResponse;
 import searchengine.dto.response.SuccessfulIndexation;
+import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.model.SiteEntity;
 import searchengine.services.IndexingService;
+import searchengine.services.SearchService;
 import searchengine.services.SiteService;
 import searchengine.services.StatisticsService;
 
@@ -23,6 +25,7 @@ public class ApiController {
     private final StatisticsService statisticsService;
     private final IndexingService indexingService;
     private final SiteService siteService;
+    private final SearchService searchService;
 
 
     @GetMapping("/statistics")
@@ -59,11 +62,11 @@ public class ApiController {
         return ResponseEntity.ok(new SuccessfulIndexation());
     }
 
-//    @GetMapping("/search")
-//    public ResponseEntity<IndexingResponse> search(@RequestParam String query,
-//                                                   @RequestParam(required = false) String site,
-//                                                   @RequestParam(required = false, defaultValue = "0") Integer offset,
-//                                                   @RequestParam(required = false, defaultValue = "20") Integer limit) {
-//
-//    }
+    @GetMapping("/search")
+    public ResponseEntity<SearchResponse> search(@RequestParam String query,
+                                                 @RequestParam(required = false) String site,
+                                                 @RequestParam(required = false, defaultValue = "0") Integer offset,
+                                                 @RequestParam(required = false, defaultValue = "20") Integer limit) {
+        return ResponseEntity.ok(searchService.searching(query, site, offset, limit));
+    }
 }

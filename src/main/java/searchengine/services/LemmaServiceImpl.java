@@ -21,7 +21,7 @@ public class LemmaServiceImpl implements LemmaService {
         return lemmaRepository.findAllLemmaEntityBySiteEntity(siteEntity);
     }
 
-    public Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
+    public synchronized Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
         LemmaEntity lemmaEntity;
         Map<LemmaEntity, Integer> map = new HashMap<>();
         for (String word : lemmas.keySet()) {

@@ -40,6 +40,9 @@ public class MorphologyService {
     }
 
     public Map<String, Integer>  getLemmas(String text) {
+        if (text.isEmpty()){
+            return new HashMap<>();
+        }
         Map<String, Integer> lemmas = new HashMap<>();
         for (String word : cleaningText(text).split("\\s+")) {
             for (String w : luceneMorphology.getMorphInfo(word)) {

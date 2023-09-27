@@ -62,7 +62,7 @@ public class SiteService {
     }
 
     public List<SiteEntity> getIndexedSites(){
-        return siteRepository.findByStatus(StatusType.INDEXING);
+        return siteRepository.findByStatus(StatusType.INDEXED);
     }
 
 }

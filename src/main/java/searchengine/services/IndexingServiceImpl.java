@@ -6,6 +6,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
 import searchengine.model.LemmaEntity;
@@ -99,6 +100,7 @@ public class IndexingServiceImpl implements IndexingService {
         }).start();
     }
 
+    @Transactional
     public void indexingOnePage(String url) {
         new Thread(() -> {
             Site site = isPageFromSiteList(url);
@@ -109,7 +111,7 @@ public class IndexingServiceImpl implements IndexingService {
                 try {
                     Connection connection = jsoupConnection.getConnection(url);
                     Document document = jsoupConnection.getDocument(connection);
-                    String content = morphologyService.getContentWithoutHtmlTags(document.outerHtml());
+                    String content = document.toString();
                     PageEntity pageEntity = new PageEntity();
                     pageService.saveNewPage(pageEntity, siteEntity, path, connection.response().statusCode(), content);
                     Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));

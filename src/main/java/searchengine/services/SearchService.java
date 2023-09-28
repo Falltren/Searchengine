@@ -1,6 +1,7 @@
 package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponse;
@@ -66,19 +67,28 @@ public class SearchService {
 
     private List<SiteEntity> selectSite(String site) {
         List<SiteEntity> siteEntityList = siteService.getIndexedSites();
-        if (siteEntityList.isEmpty() || siteService.findSiteByUrl(site).orElseThrow().getStatus() != StatusType.INDEXED) {
-            throw new IllegalArgumentException("Отсутствуют проиндексированные сайты");
+        if (siteEntityList.isEmpty()) {
+            throw new NoSuchElementException("Отсутствуют проиндексированные сайты");
         }
         if (site == null) {
             return siteEntityList;
         } else {
-            return siteEntityList.stream().filter(s -> s.getUrl().contains(site)).collect(Collectors.toList());
+            return List.of(siteService.findSiteByUrl(site).orElseThrow());
         }
+
     }
 
     private List<LemmaEntity> getSortedLemmaEntities(String query, SiteEntity siteEntity) {
         List<String> lemmas = splitTextIntoLemmas(query);
-        List<LemmaEntity> lemmaEntities = lemmaService.findLemmasList(siteEntity, lemmas);
+        List<LemmaEntity> lemmaEntities = new ArrayList<>();
+        for (String lemma : lemmas){
+            Optional<LemmaEntity> lemmaEntity = lemmaService.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
+            if (lemmaEntity.isEmpty()){
+                return new ArrayList<>();
+            }
+            lemmaEntities.add(lemmaEntity.get());
+        }
+//        List<LemmaEntity> lemmaEntities = lemmaService.findLemmasList(siteEntity, lemmas);
         Collections.sort(lemmaEntities, Comparator.comparing(LemmaEntity::getFrequency));
         return lemmaEntities;
     }
@@ -120,9 +130,9 @@ public class SearchService {
             String sitePath = entry.getKey().getSiteEntity().getUrl().substring(0, entry.getKey().getSiteEntity().getUrl().length() - 1);
             searchData.setSite(sitePath);
             searchData.setSiteName(entry.getKey().getSiteEntity().getName());
-            searchData.setTitle(entry.getKey().getPath());
+            searchData.setTitle(getTitleFromPage(entry.getKey()));
             searchData.setRelevance(entry.getValue());
-            searchData.setSnippet("some snippet");
+            searchData.setSnippet(getSnippet(entry.getKey().getContent()));
             List<SearchData> data = searchResponse.getData();
             if (data.size() == limit) {
                 break;
@@ -130,5 +140,16 @@ public class SearchService {
             data.add(searchData);
         }
         return searchResponse;
+    }
+
+    private String getTitleFromPage(PageEntity pageEntity) {
+        String content = pageEntity.getContent();
+        int start = content.indexOf("<title>");
+        int end = content.indexOf("</title>");
+        return content.substring(start + 7, end);
+    }
+
+    private String getSnippet(String content){
+        return Jsoup.parse(content).select("body").text().substring(0, 100);
     }
 }

@@ -130,20 +130,20 @@ public class CrawlerService extends RecursiveAction {
             } while (uniqueLinks.size() < 1);
             Connection connection = jsoupConnection.getConnection(url);
             Document document = jsoupConnection.getDocument(connection);
-            Elements elements = document.select("a");
+            Elements elements = document.select("body").select("a");
             SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl()).orElseThrow();
             String content = document.toString();
 
-                PageEntity pageEntity = new PageEntity();
-                int statusCode = connection.response().statusCode();
-                if (statusCode != 200) {
-                    content = "";
-                }
-                pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(url), connection.response().statusCode(), content);
-                System.out.println(url);
-                Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
-                Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
-                indexService.addIndex(pageEntity, lemmasWithRank);
+            PageEntity pageEntity = new PageEntity();
+            int statusCode = connection.response().statusCode();
+            if (statusCode != 200) {
+                content = "";
+            }
+            pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(url), connection.response().statusCode(), content);
+            System.out.println(url);
+            Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
+            Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
+            indexService.addIndex(pageEntity, lemmasWithRank);
 
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
@@ -151,20 +151,6 @@ public class CrawlerService extends RecursiveAction {
                     CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService, jsoupConnection);
                     task.fork();
                     crawlerServiceList.add(task);
-//                    SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl()).orElseThrow();
-//                    String content = document.toString();
-//                    PageEntity pageEntity = new PageEntity();
-//                    int statusCode = connection.response().statusCode();
-//                    if (statusCode != 200){
-//                        content = "";
-//                    }
-//                    pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(newAbsolutLink), connection.response().statusCode(), content);
-//
-//                    Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
-//                    Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
-//                    indexService.addIndex(pageEntity, lemmasWithRank);
-//
-//                    System.out.println(newAbsolutLink);
                 }
             }
             for (CrawlerService crawlerService : crawlerServiceList) {

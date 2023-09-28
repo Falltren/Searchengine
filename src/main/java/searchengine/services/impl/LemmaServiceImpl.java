@@ -1,10 +1,11 @@
-package searchengine.services;
+package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 import searchengine.repository.LemmaRepository;
+import searchengine.services.LemmaService;
 
 import java.util.*;
 

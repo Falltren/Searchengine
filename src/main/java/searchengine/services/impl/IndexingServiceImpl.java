@@ -1,4 +1,4 @@
-package searchengine.services;
+package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Connection;
@@ -13,6 +13,7 @@ import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
+import searchengine.services.*;
 import searchengine.utils.ForkJoinManager;
 import searchengine.utils.JsoupConnection;
 

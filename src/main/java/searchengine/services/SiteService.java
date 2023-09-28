@@ -24,12 +24,6 @@ public class SiteService {
         siteRepository.deleteByUrl(url);
     }
 
-//    @Modifying
-//    @Transactional
-//    @Query(value = "DELETE FROM sites s WHERE s.url = :url", nativeQuery = true)
-//    public void deleteSiteByUrl(String url) {
-//    }
-
     public Optional<SiteEntity> findSiteByUrl(String url) {
         return siteRepository.findByUrl(url);
     }

@@ -22,25 +22,27 @@ public class SearchService {
     private final IndexService indexService;
 
     public List<String> splitTextIntoLemmas(String query) {
-        return new ArrayList<>(morphologyService.getLemmas(query).keySet());
+        return new ArrayList<>(morphologyService.collectLemmas(query).keySet());
     }
 
     public Map<PageEntity, Set<IndexEntity>> findPages(String query, String site) {
         Map<PageEntity, Set<IndexEntity>> result = new HashMap<>();
         for (SiteEntity siteEntity : selectSite(site)) {
             List<LemmaEntity> lemmaEntities = getSortedLemmaEntities(query, siteEntity);
+            Map<PageEntity, Set<IndexEntity>> pagesWithIndexes = new HashMap<>();
             for (int i = 0; i < lemmaEntities.size(); i++) {
-                Map<PageEntity, IndexEntity> pair = new HashMap<>();
                 List<IndexEntity> indexes = indexService.getIndexesByLemma(lemmaEntities.get(i));
+                Map<PageEntity, IndexEntity> pair = new HashMap<>();
                 for (IndexEntity index : indexes) {
                     PageEntity pageEntity = index.getPageEntity();
                     pair.put(pageEntity, index);
                     if (i == 0) {
-                        result.put(pageEntity, Stream.of(index).collect(Collectors.toSet()));
+                        pagesWithIndexes.put(pageEntity, Stream.of(index).collect(Collectors.toSet()));
                     }
                 }
-                result = calculateResultMap(pair, result);
+                pagesWithIndexes = calculateResultMap(pair, pagesWithIndexes);
             }
+            result.putAll(pagesWithIndexes);
         }
         return result;
     }
@@ -81,14 +83,13 @@ public class SearchService {
     private List<LemmaEntity> getSortedLemmaEntities(String query, SiteEntity siteEntity) {
         List<String> lemmas = splitTextIntoLemmas(query);
         List<LemmaEntity> lemmaEntities = new ArrayList<>();
-        for (String lemma : lemmas){
+        for (String lemma : lemmas) {
             Optional<LemmaEntity> lemmaEntity = lemmaService.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
-            if (lemmaEntity.isEmpty()){
+            if (lemmaEntity.isEmpty()) {
                 return new ArrayList<>();
             }
             lemmaEntities.add(lemmaEntity.get());
         }
-//        List<LemmaEntity> lemmaEntities = lemmaService.findLemmasList(siteEntity, lemmas);
         Collections.sort(lemmaEntities, Comparator.comparing(LemmaEntity::getFrequency));
         return lemmaEntities;
     }
@@ -144,12 +145,15 @@ public class SearchService {
 
     private String getTitleFromPage(PageEntity pageEntity) {
         String content = pageEntity.getContent();
-        int start = content.indexOf("<title>");
-        int end = content.indexOf("</title>");
-        return content.substring(start + 7, end);
+
+//        int start = content.indexOf("<title>");
+//        int end = content.indexOf("</title>");
+        return Jsoup.parse(content).title();
     }
 
-    private String getSnippet(String content){
+    private String getSnippet(String content) {
+        String text = Jsoup.parse(content).select("body").text();
+        Map<String, Set<String>> wordsWithLemmas = morphologyService.getWordsWithLemmas(text);
         return Jsoup.parse(content).select("body").text().substring(0, 100);
     }
 }

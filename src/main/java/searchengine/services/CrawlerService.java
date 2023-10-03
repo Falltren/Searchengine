@@ -141,7 +141,7 @@ public class CrawlerService extends RecursiveAction {
             }
             pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(url), connection.response().statusCode(), content);
             System.out.println(url);
-            Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
+            Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(content));
             Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
             indexService.addIndex(pageEntity, lemmasWithRank);
 
@@ -165,7 +165,7 @@ public class CrawlerService extends RecursiveAction {
         if (link.endsWith("html")) {
             return false;
         }
-        String regex = "(.*\\.[A-Za-z\\d]{3,4})|(.*#.*)";
+        String regex = "(.*\\.[A-Za-z\\d]{3,4})|(.*#.*)|(.+/?.+=\\d+)";
         return link.matches(regex);
     }
 

@@ -2,7 +2,6 @@ package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Connection;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -115,7 +114,7 @@ public class IndexingServiceImpl implements IndexingService {
                     String content = document.toString();
                     PageEntity pageEntity = new PageEntity();
                     pageService.saveNewPage(pageEntity, siteEntity, path, connection.response().statusCode(), content);
-                    Map<String, Integer> lemmasFromPage = morphologyService.getLemmas(morphologyService.cleaningText(content));
+                    Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(content));
                     Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
                     indexService.addIndex(pageEntity, lemmasWithRank);
                 } catch (IOException e) {

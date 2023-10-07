@@ -5,7 +5,10 @@ import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponse;
-import searchengine.model.*;
+import searchengine.model.IndexEntity;
+import searchengine.model.LemmaEntity;
+import searchengine.model.PageEntity;
+import searchengine.model.SiteEntity;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -133,7 +136,9 @@ public class SearchService {
             searchData.setSiteName(entry.getKey().getSiteEntity().getName());
             searchData.setTitle(getTitleFromPage(entry.getKey()));
             searchData.setRelevance(entry.getValue());
-            searchData.setSnippet(getSnippet(entry.getKey().getContent()));
+            System.out.println(sitePath); // need to delete
+            searchData.setSnippet(getSnippet(entry.getKey().getContent(), query));
+
             List<SearchData> data = searchResponse.getData();
             if (data.size() == limit) {
                 break;
@@ -145,15 +150,64 @@ public class SearchService {
 
     private String getTitleFromPage(PageEntity pageEntity) {
         String content = pageEntity.getContent();
-
-//        int start = content.indexOf("<title>");
-//        int end = content.indexOf("</title>");
         return Jsoup.parse(content).title();
     }
 
-    private String getSnippet(String content) {
+    private String getSnippet(String content, String query) {
+        StringBuilder snippet = new StringBuilder();
         String text = Jsoup.parse(content).select("body").text();
         Map<String, Set<String>> wordsWithLemmas = morphologyService.getWordsWithLemmas(text);
-        return Jsoup.parse(content).select("body").text().substring(0, 100);
+        Set<String> lemmas = new HashSet<>(splitTextIntoLemmas(query));
+        List<String> words = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : wordsWithLemmas.entrySet()) {
+            if (lemmas.containsAll(entry.getValue()) && !entry.getValue().isEmpty()) {
+                System.out.println(entry.getKey() + " // " + entry.getValue());
+                words.add(entry.getKey());
+            }
+        }
+        String[] textArray = text.split(" ");
+        for (int i = 0; i < textArray.length; i++) {
+            String checkingWord = checkWordInText(textArray[i], words);
+            if (!checkingWord.equals("")) {
+                snippet.append("...").append(textArray[i - 1]).append(" ")
+                        .append(underlineWord(textArray[i], checkingWord)).append("...");
+            }
+        }
+//        return Jsoup.parse(content).select("body").text().substring(0, 100);
+        return snippet.toString().trim();
+    }
+
+    private String checkWordInText(String testedWord, List<String> foundWords) {
+        for (String word : foundWords) {
+            if (testedWord.toLowerCase(Locale.ROOT).contains(word)) {
+                return word;
+            }
+        }
+        return "";
+    }
+
+    private String underlineWord(String word, String checkWord) {
+        String result;
+        if (word.length() == checkWord.length()) {
+            return "<b>" + word + "</b>";
+        }
+        int start = word.toLowerCase(Locale.ROOT).indexOf(checkWord);
+        int end = findNoLetterSymbol(start, word);
+        String underlineWord = word.substring(start, end);
+        if (start == 0) {
+            result = "<b>" + underlineWord + "</b>" + word.substring(end);
+        } else {
+            result = word.substring(0, start) + "<b>" + underlineWord + "</b>" + word.substring(end);
+        }
+        return result;
+    }
+
+    private int findNoLetterSymbol(int startIndex, String word) {
+        for (int i = startIndex; i < word.length(); i++) {
+            if (!Character.isLetter(word.charAt(i))) {
+                return i;
+            }
+        }
+        return word.length();
     }
 }

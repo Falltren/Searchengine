@@ -136,7 +136,6 @@ public class SearchService {
             searchData.setSiteName(entry.getKey().getSiteEntity().getName());
             searchData.setTitle(getTitleFromPage(entry.getKey()));
             searchData.setRelevance(entry.getValue());
-            System.out.println(sitePath); // need to delete
             searchData.setSnippet(getSnippet(entry.getKey().getContent(), query));
 
             List<SearchData> data = searchResponse.getData();
@@ -154,27 +153,25 @@ public class SearchService {
     }
 
     private String getSnippet(String content, String query) {
-        StringBuilder snippet = new StringBuilder();
         String text = Jsoup.parse(content).select("body").text();
         Map<String, Set<String>> wordsWithLemmas = morphologyService.getWordsWithLemmas(text);
         Set<String> lemmas = new HashSet<>(splitTextIntoLemmas(query));
         List<String> words = new ArrayList<>();
         for (Map.Entry<String, Set<String>> entry : wordsWithLemmas.entrySet()) {
             if (lemmas.containsAll(entry.getValue()) && !entry.getValue().isEmpty()) {
-                System.out.println(entry.getKey() + " // " + entry.getValue());
                 words.add(entry.getKey());
             }
         }
         String[] textArray = text.split(" ");
+        Map<Integer, String> wordsWithPosition = new TreeMap<>();
         for (int i = 0; i < textArray.length; i++) {
             String checkingWord = checkWordInText(textArray[i], words);
             if (!checkingWord.equals("")) {
-                snippet.append("...").append(textArray[i - 1]).append(" ")
-                        .append(underlineWord(textArray[i], checkingWord)).append("...");
+                String underlineWord = underlineWord(textArray[i], checkingWord);
+                wordsWithPosition.put(i, underlineWord);
             }
         }
-//        return Jsoup.parse(content).select("body").text().substring(0, 100);
-        return snippet.toString().trim();
+        return createSnippet(wordsWithPosition, textArray);
     }
 
     private String checkWordInText(String testedWord, List<String> foundWords) {
@@ -209,5 +206,26 @@ public class SearchService {
             }
         }
         return word.length();
+    }
+
+    private String createSnippet(Map<Integer, String> wordWithIndex, String[] textArray) {
+        StringBuilder stringBuilder = new StringBuilder();
+        int lineNumber = 1;
+        for (Map.Entry<Integer, String> entry : wordWithIndex.entrySet()) {
+            if (lineNumber > 3) {
+                break;
+            }
+            int start = entry.getKey() - 2;
+            for (int i = start; i < start + 10; i++) {
+                if (i == start + 2) {
+                    stringBuilder.append(entry.getValue()).append(" ");
+                } else {
+                    stringBuilder.append(textArray[i]).append(" ");
+                }
+            }
+            stringBuilder.append("...").append("\n");
+            lineNumber++;
+        }
+        return stringBuilder.toString();
     }
 }

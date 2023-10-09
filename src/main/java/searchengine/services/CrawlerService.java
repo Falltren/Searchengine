@@ -165,7 +165,7 @@ public class CrawlerService extends RecursiveAction {
         if (link.endsWith("html")) {
             return false;
         }
-        String regex = "(.*\\.[A-Za-z\\d]{3,4})|(.*#.*)|(.+/?.+=\\d+)";
+        String regex = "(.*\\.[A-Za-z\\d]{3,4})|(.*#.*)|(.+/?.+=[^/]+)";
         return link.matches(regex);
     }
 

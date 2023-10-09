@@ -22,18 +22,18 @@ spring:
 
 indexing-settings:
   sites:
-    - url: https://nopaper.ru/
-      name: NoPaper.ru
+#    - url: https://nopaper.ru/
+#      name: NoPaper.ru
     - url: https://www.svetlovka.ru/
       name: Svetlovka.ru
 #    - url: https://skillbox.ru/
 #      name: Skillbox
 #    - url: https://www.playback.ru/
 #      name: PlayBack.ru
-#    - url: https://et-cetera.ru/mobile/
-#      name: EtCeteraMobile
-#    - url: https://nikoartgallery.com/
-#      name: NikoGallery
+    - url: https://et-cetera.ru/mobile/
+      name: EtCeteraMobile
+    - url: https://ipfran.ru/
+      name: Ipfran.ru
 
 
 jsoup-settings:

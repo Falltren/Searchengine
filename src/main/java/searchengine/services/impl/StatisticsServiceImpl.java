@@ -9,7 +9,6 @@ import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.dto.statistics.TotalStatistics;
 import searchengine.model.SiteEntity;
-import searchengine.model.StatusType;
 import searchengine.services.SiteService;
 import searchengine.services.StatisticsService;
 

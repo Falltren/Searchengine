@@ -1,6 +1,5 @@
 package searchengine.services;
 
-import searchengine.config.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
 
@@ -19,6 +18,5 @@ public interface LemmaService {
 
     List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String> lemmas);
 
-    
 
 }

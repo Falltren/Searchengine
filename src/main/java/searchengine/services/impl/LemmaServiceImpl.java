@@ -15,8 +15,6 @@ public class LemmaServiceImpl implements LemmaService {
 
     private final LemmaRepository lemmaRepository;
 
-//    private final MorphologyService morphologyService;
-
     @Override
     public List<LemmaEntity> findAllLemmaEntityBySiteEntity(SiteEntity siteEntity) {
         return lemmaRepository.findAllLemmaEntityBySiteEntity(siteEntity);

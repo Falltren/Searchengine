@@ -2,7 +2,6 @@ package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
@@ -19,7 +18,7 @@ public class IndexServiceImpl implements IndexService {
     private final IndexRepository indexRepository;
 
     public void addIndex(PageEntity pageEntity, Map<LemmaEntity, Integer> lemmasWithRank) {
-        for (Map.Entry<LemmaEntity, Integer> entry : lemmasWithRank.entrySet()){
+        for (Map.Entry<LemmaEntity, Integer> entry : lemmasWithRank.entrySet()) {
             IndexEntity indexEntity = new IndexEntity();
             indexEntity.setPageEntity(pageEntity);
             indexEntity.setLemmaEntity(entry.getKey());

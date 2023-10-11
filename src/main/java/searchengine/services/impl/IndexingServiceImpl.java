@@ -40,10 +40,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     private final MorphologyService morphologyService;
 
-    private final CrawlerService crawlerService;
-
     private final JsoupConnection jsoupConnection;
-
 
 
     @Override

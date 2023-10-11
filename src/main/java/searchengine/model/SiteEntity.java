@@ -37,7 +37,6 @@ public class SiteEntity {
     private String name;
 
     @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    @Fetch(value = FetchMode.SELECT)
     private List<PageEntity> pages;
 
     @OneToMany(mappedBy = "siteEntity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)

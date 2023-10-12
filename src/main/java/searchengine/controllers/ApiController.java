@@ -32,31 +32,20 @@ public class ApiController {
 
     @GetMapping("/startIndexing")
     public ResponseEntity<IndexingResponse> doIndexing() {
-        if (siteService.isIndexing()) {
-            return ResponseEntity.badRequest().body(new FailIndexing("Индексация уже запущена"));
-        }
-        indexingService.startIndexing();
-        return ResponseEntity.ok().body(new SuccessfulIndexation());
+        IndexingResponse indexingResponse = indexingService.startIndexing();
+        return ResponseEntity.ok().body(indexingResponse);
     }
 
     @GetMapping("/stopIndexing")
     public ResponseEntity<IndexingResponse> stopIndexing() {
-        if (!siteService.isIndexing()) {
-            return ResponseEntity.badRequest().body(new FailIndexing("Индексация не запущена"));
-        }
-        indexingService.stopIndexing();
-        return ResponseEntity.ok().body(new SuccessfulIndexation());
+        IndexingResponse indexingResponse = indexingService.stopIndexing();
+        return ResponseEntity.ok().body(indexingResponse);
     }
 
     @PostMapping("/indexPage")
     public ResponseEntity<IndexingResponse> indexingOnePage(@RequestParam String url) {
-        if (indexingService.isPageFromSiteList(url).getUrl() == null) {
-            return ResponseEntity.badRequest().body(new FailIndexing(
-                    "Данная страница находится за пределами сайтов, " +
-                            "указанных в конфигурационном файле"));
-        }
-        indexingService.indexingOnePage(url);
-        return ResponseEntity.ok(new SuccessfulIndexation());
+        IndexingResponse indexingResponse = indexingService.indexingOnePage(url);
+        return ResponseEntity.ok(indexingResponse);
     }
 
     @GetMapping("/search")

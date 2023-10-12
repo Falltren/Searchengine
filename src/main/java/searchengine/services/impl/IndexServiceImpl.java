@@ -26,16 +26,8 @@ public class IndexServiceImpl implements IndexService {
             indexRepository.save(indexEntity);
         }
     }
-
-    @Override
-    public List<IndexEntity> getIndexList(List<LemmaEntity> lemmas) {
-        return indexRepository.findListIndexesByLemmaEntityIn(lemmas);
-    }
-
     @Override
     public List<IndexEntity> getIndexesByLemma(LemmaEntity lemmaEntity) {
         return indexRepository.findByLemmaEntity(lemmaEntity);
     }
-
-
 }

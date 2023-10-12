@@ -1,6 +1,7 @@
 package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.ObjectProvider;
@@ -8,6 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
+import searchengine.dto.response.FailIndexing;
+import searchengine.dto.response.IndexingResponse;
+import searchengine.dto.response.SuccessfulIndexation;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
@@ -24,27 +28,23 @@ import java.util.concurrent.ForkJoinPool;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IndexingServiceImpl implements IndexingService {
 
     private final SitesList sitesList;
-
     private final ObjectProvider<CrawlerService> objectProvider;
-
     private final SiteService siteService;
-
     private final PageService pageService;
-
     private final LemmaService lemmaService;
-
     private final IndexService indexService;
-
     private final MorphologyService morphologyService;
-
     private final JsoupConnection jsoupConnection;
 
-
     @Override
-    public void startIndexing() {
+    public IndexingResponse startIndexing() {
+        if (siteService.isIndexing()) {
+            return new FailIndexing("Индексация уже запущена");
+        }
         new Thread(() -> {
             for (Site site : sitesList.getSites()) {
                 ForkJoinPool forkJoinPool = ForkJoinManager.getForkJoinPool();
@@ -68,21 +68,21 @@ public class IndexingServiceImpl implements IndexingService {
                 }
                 siteEntity.setStatusTime(new Date());
                 siteService.save(siteEntity);
-                System.out.println("=================> " + "статус сайта " + site.getUrl() + "изменен на " + siteEntity.getStatus());
-                System.out.println("Parsing: " + site.getUrl() + " ended");
+                log.info("статус сайта " + site.getUrl() + " изменен на " + siteEntity.getStatus());
                 System.out.println("Collection size: " + CrawlerService.getUniqueLinks().size());
-                System.out.println("Time is " + LocalDateTime.now());
                 CrawlerService.getUniqueLinks().clear();
             }
             CrawlerService.refreshCrawlerStatus();
         }).start();
+        return new SuccessfulIndexation();
     }
 
-
     @Override
-    public void stopIndexing() {
+    public IndexingResponse stopIndexing() {
+        if (!siteService.isIndexing()) {
+            return new FailIndexing("Индексация не запущена");
+        }
         new Thread(() -> {
-
             CrawlerService.stopCrawler();
             for (Site site : sitesList.getSites()) {
                 SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
@@ -91,42 +91,41 @@ public class IndexingServiceImpl implements IndexingService {
                     siteEntity.setStatusTime(new Date());
                     siteEntity.setLastError("Индексация остановлена пользователем.");
                     siteService.save(siteEntity);
-                    System.out.println("=================> " + "статус сайта " + site.getUrl() + "изменен на " + siteEntity.getStatus());
+                    log.info("Статус сайта " + site.getUrl() + "изменен на " + siteEntity.getStatus());
                 }
             }
         }).start();
+        return new SuccessfulIndexation();
     }
 
     @Transactional
-    public void indexingOnePage(String url) {
+    public IndexingResponse indexingOnePage(String url) {
+        Site site = isPageFromSiteList(url);
+        if (site.getUrl() == null) {
+            return new FailIndexing("Данная страница находится за пределами сайтов, " +
+                    "указанных в конфигурационном файле");
+        }
         new Thread(() -> {
-            Site site = isPageFromSiteList(url);
-            if (site.getUrl() != null) {
-                SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).get();
-                String path = url.substring(site.getUrl().length() - 1); //need changing on service
-                pageService.deletePageEntityBySiteEntityAndPath(siteEntity, path);
-                try {
-                    Connection connection = jsoupConnection.getConnection(url);
-                    Document document = jsoupConnection.getDocument(connection);
-                    String content = document.toString();
-                    PageEntity pageEntity = new PageEntity();
-                    pageService.saveNewPage(pageEntity, siteEntity, path, connection.response().statusCode(), content);
-                    Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(content));
-                    Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
-                    indexService.addIndex(pageEntity, lemmasWithRank);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+            SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
+            String path = url.substring(site.getUrl().length() - 1); //need changing on service
+            pageService.deletePageEntityBySiteEntityAndPath(siteEntity, path);
+            try {
+                Connection connection = jsoupConnection.getConnection(url);
+                Document document = jsoupConnection.getDocument(connection);
+                String content = document.toString();
+                PageEntity pageEntity = new PageEntity();
+                pageService.saveNewPage(pageEntity, siteEntity, path, connection.response().statusCode(), content);
+                Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(content));
+                Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
+                indexService.addIndex(pageEntity, lemmasWithRank);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }).start();
+        return new SuccessfulIndexation();
     }
 
     public Site isPageFromSiteList(String url) {
-        for (Site site : sitesList.getSites()) {
-            if (url.contains(site.getUrl())) {
-                return site;
-            }
-        }
-        return new Site();
+        return sitesList.getSites().stream().filter(s -> url.contains(s.getUrl())).findAny().orElse(new Site());
     }
 }

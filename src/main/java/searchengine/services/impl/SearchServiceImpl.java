@@ -128,6 +128,7 @@ public class SearchServiceImpl implements SearchService {
         } else {
             searchResponse.setCount(limit);
         }
+        List<SearchData> data = searchResponse.getData();
         for (Map.Entry<PageEntity, Float> entry : pagesResult.entrySet()) {
             SearchData searchData = new SearchData();
             searchData.setUri(entry.getKey().getPath());
@@ -137,13 +138,12 @@ public class SearchServiceImpl implements SearchService {
             searchData.setTitle(getTitleFromPage(entry.getKey()));
             searchData.setRelevance(entry.getValue());
             searchData.setSnippet(getSnippet(entry.getKey().getContent(), query));
-
-            List<SearchData> data = searchResponse.getData();
             if (data.size() == limit) {
                 break;
             }
             data.add(searchData);
         }
+        searchResponse.setData(data.stream().skip(offset).collect(Collectors.toList()));
         return searchResponse;
     }
 

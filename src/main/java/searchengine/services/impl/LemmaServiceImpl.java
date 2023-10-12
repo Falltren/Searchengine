@@ -15,11 +15,6 @@ public class LemmaServiceImpl implements LemmaService {
 
     private final LemmaRepository lemmaRepository;
 
-    @Override
-    public List<LemmaEntity> findAllLemmaEntityBySiteEntity(SiteEntity siteEntity) {
-        return lemmaRepository.findAllLemmaEntityBySiteEntity(siteEntity);
-    }
-
     public synchronized Map<LemmaEntity, Integer> addLemma(Map<String, Integer> lemmas, SiteEntity siteEntity) {
         LemmaEntity lemmaEntity;
         Map<LemmaEntity, Integer> map = new HashMap<>();
@@ -42,10 +37,5 @@ public class LemmaServiceImpl implements LemmaService {
 
     public Optional<LemmaEntity> findLemmaEntityByLemmaAndSiteEntity(String lemma, SiteEntity siteEntity) {
         return lemmaRepository.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
-    }
-
-    @Override
-    public List<LemmaEntity> findLemmasList(SiteEntity siteEntity, Collection<String> lemmas) {
-        return lemmaRepository.findBySiteEntityAndLemmaIn(siteEntity, lemmas);
     }
 }

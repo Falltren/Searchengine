@@ -1,14 +1,15 @@
 package searchengine.services;
 
 import searchengine.config.Site;
+import searchengine.dto.response.IndexingResponse;
 
 public interface IndexingService {
 
-    void startIndexing();
+    IndexingResponse startIndexing();
 
-    void stopIndexing();
+    IndexingResponse stopIndexing();
 
-    void indexingOnePage(String url);
+    IndexingResponse indexingOnePage(String url);
 
     Site isPageFromSiteList(String url);
 }

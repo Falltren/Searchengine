@@ -2,6 +2,7 @@ package searchengine.services;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -27,6 +28,7 @@ import java.util.concurrent.RecursiveAction;
 @Setter
 @Getter
 @Scope(value = "prototype")
+@Slf4j
 public class CrawlerService extends RecursiveAction {
 
     private static volatile boolean isNeedStop;
@@ -70,7 +72,7 @@ public class CrawlerService extends RecursiveAction {
     }
 
     public static void stopCrawler() {
-        System.out.println("Вызвана остановка парсинга!!!!");
+        log.warn("Вызвана остановка парсинга!!!!");
         isNeedStop = true;
     }
 

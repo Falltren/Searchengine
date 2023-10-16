@@ -21,7 +21,6 @@ import searchengine.utils.ForkJoinManager;
 import searchengine.utils.JsoupConnection;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ForkJoinPool;
@@ -42,6 +41,7 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse startIndexing() {
+        log.info("start indexing all sites");
         if (siteService.isIndexing()) {
             return new FailIndexing("Индексация уже запущена");
         }

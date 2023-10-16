@@ -175,8 +175,16 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String checkWordInText(String testedWord, List<String> foundWords) {
+        testedWord = morphologyService.cleaningText(testedWord);
+        String[] words = testedWord.split(" ");
         for (String word : foundWords) {
-            if (testedWord.toLowerCase(Locale.ROOT).contains(word)) {
+            boolean isMatchWord = false;
+            if (words.length > 1) {
+                List<String> wordsFrom = Arrays.asList(words);
+                isMatchWord = foundWords.stream().anyMatch(e1 -> wordsFrom.stream().anyMatch(e1::equals));
+            }
+            if (testedWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1
+                    || isMatchWord) {
                 return word;
             }
         }

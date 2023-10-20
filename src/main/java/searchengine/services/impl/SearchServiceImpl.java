@@ -158,20 +158,40 @@ public class SearchServiceImpl implements SearchService {
         Set<String> lemmas = new HashSet<>(splitTextIntoLemmas(query));
         List<String> words = new ArrayList<>();
         for (Map.Entry<String, Set<String>> entry : wordsWithLemmas.entrySet()) {
-            if (lemmas.containsAll(entry.getValue()) && !entry.getValue().isEmpty()) {
+            if (lemmas.stream().anyMatch(e -> entry.getValue().contains(e))) {
                 words.add(entry.getKey());
+                lemmas.removeAll(entry.getValue());
             }
         }
-        String[] textArray = text.split(" ");
-        Map<Integer, String> wordsWithPosition = new TreeMap<>();
-        for (int i = 0; i < textArray.length; i++) {
-            String checkingWord = checkWordInText(textArray[i], words);
-            if (!checkingWord.equals("")) {
-                String underlineWord = underlineWord(textArray[i], checkingWord);
-                wordsWithPosition.put(i, underlineWord);
+        String[] wordsArray = text.split(" ");
+        Map<Integer, String> wordsWithPosition = getWordsWithPosition(words, wordsArray);
+        Map<Integer, String> wordsForSnippet = removingAdjacentPosition(wordsWithPosition);
+//        int countFoundWords = wordsForSnippet.size();
+//        StringBuilder stringBuilder = new StringBuilder();
+//        for (Map.Entry<Integer, String> entry : wordsForSnippet.entrySet()) {
+//            String[] wordArrayLine = getWordsArrayForOneLine(entry, wordsArray, countFoundWords);
+//            String line = createWordsLine(wordArrayLine, words);
+//            stringBuilder.append(line).append("...").append("\n");
+//            System.out.println(line);
+//        }
+        return concatenateLines(wordsForSnippet, wordsArray, words);
+    }
+
+    private String concatenateLines(Map<Integer, String> wordsForSnippet, String[] wordsArray, List<String> words) {
+        StringBuilder stringBuilder = new StringBuilder();
+        int countFoundWords = Math.min(wordsForSnippet.size(), 3);
+        int linesCount = 0;
+        for (Map.Entry<Integer, String> entry : wordsForSnippet.entrySet()) {
+            if (linesCount >= 3) {
+                break;
             }
+            String[] wordArrayLine = getWordsArrayForOneLine(entry, wordsArray, countFoundWords);
+            String line = createWordsLine(wordArrayLine, words);
+            stringBuilder.append(line).append("...").append("\n");
+            System.out.println(line);
+            linesCount++;
         }
-        return createSnippet(wordsWithPosition, textArray);
+        return stringBuilder.toString();
     }
 
     private String checkWordInText(String testedWord, List<String> foundWords) {
@@ -183,8 +203,7 @@ public class SearchServiceImpl implements SearchService {
                 List<String> wordsFrom = Arrays.asList(words);
                 isMatchWord = foundWords.stream().anyMatch(e1 -> wordsFrom.stream().anyMatch(e1::equals));
             }
-            if (testedWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1
-                    || isMatchWord) {
+            if (testedWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1 || isMatchWord) {
                 return word;
             }
         }
@@ -216,24 +235,86 @@ public class SearchServiceImpl implements SearchService {
         return word.length();
     }
 
-    private String createSnippet(Map<Integer, String> wordWithIndex, String[] textArray) {
+    private String[] getWordsArrayForOneLine(Map.Entry<Integer, String> wordWithPosition,
+                                             String[] wordsArray, int countFoundWords) {
+        int startPosition = findStartPositionForLine(wordWithPosition.getKey(), countFoundWords, wordsArray);
+        if (countFoundWords == 1) {
+            String[] line = new String[36];
+            System.arraycopy(wordsArray, startPosition, line, 0, 36);
+            return line;
+        } else if (countFoundWords == 2) {
+            String[] line = new String[18];
+            System.arraycopy(wordsArray, startPosition, line, 0, 18);
+            return line;
+        } else {
+            String[] line = new String[12];
+            System.arraycopy(wordsArray, startPosition, line, 0, 12);
+            return line;
+        }
+    }
+
+    private String createWordsLine(String[] wordsArrayLine, List<String> foundWords) {
         StringBuilder stringBuilder = new StringBuilder();
-        int lineNumber = 1;
-        for (Map.Entry<Integer, String> entry : wordWithIndex.entrySet()) {
-            if (lineNumber > 3) {
-                break;
+        for (String w : wordsArrayLine) {
+            String checkingWord = checkWordInText(w, foundWords);
+            if (!checkingWord.equals("")) {
+                String word = underlineWord(w, checkingWord);
+                stringBuilder.append(word).append(" ");
+            } else {
+                stringBuilder.append(w).append(" ");
             }
-            int start = entry.getKey() - 2;
-            for (int i = start; i < start + 10; i++) {
-                if (i == start + 2) {
-                    stringBuilder.append(entry.getValue()).append(" ");
-                } else {
-                    stringBuilder.append(textArray[i]).append(" ");
-                }
-            }
-            stringBuilder.append("...").append("\n");
-            lineNumber++;
         }
         return stringBuilder.toString();
+    }
+
+    private int findStartPositionForLine(int position, int countFoundWords, String[] textArray) {
+        if (position == 0) {
+            return position;
+        }
+        for (int i = position - 1; i >= 0; i--) {
+            if (textArray[i].contains(".")) {
+                return i + 1;
+            }
+            if (countFoundWords == 1 && i <= position - 30) {
+                return position;
+            } else if (countFoundWords == 2 && i <= position - 15) {
+                return position;
+            } else if (i <= position - 9) {
+                return position;
+            }
+        }
+        return position;
+    }
+
+    private Map<Integer, String> getWordsWithPosition(List<String> words, String[] wordsArray) {
+        Map<Integer, String> wordsWithPosition = new HashMap<>();
+        for (int i = 0; i < wordsArray.length; i++) {
+            String checkingWord = checkWordInText(wordsArray[i], words);
+            if (!checkingWord.equals("")) {
+                wordsWithPosition.put(i, wordsArray[i]);
+            }
+        }
+        return wordsWithPosition;
+    }
+
+    private Map<Integer, String> removingAdjacentPosition(Map<Integer, String> wordsWithPosition) {
+        Map<Integer, String> result = new TreeMap<>(wordsWithPosition);
+        Map.Entry<Integer, String> previous = result.entrySet().stream().findFirst().orElse(null);
+        boolean firstCompare = true;
+        Iterator<Map.Entry<Integer, String>> iterator = result.entrySet().iterator();
+        while (iterator.hasNext()) {
+            if (firstCompare) {
+                iterator.next();
+                firstCompare = false;
+                continue;
+            }
+            Map.Entry<Integer, String> next = iterator.next();
+            if (next.getKey() < previous.getKey() + 10) {
+                iterator.remove();
+            } else {
+                previous = next;
+            }
+        }
+        return result;
     }
 }

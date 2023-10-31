@@ -8,8 +8,6 @@ import searchengine.services.MorphologyService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +29,7 @@ public class MorphologyServiceImpl implements MorphologyService {
         return text.toLowerCase()
                 .replaceAll("[^а-яё]+", " ")
                 .replaceAll("ё", "е")
+                .replaceAll("<!--.+-->", "")
                 .replaceAll("\\s+", " ")
                 .strip();
     }
@@ -52,20 +51,6 @@ public class MorphologyServiceImpl implements MorphologyService {
         return lemmas;
     }
 
-    public Map<String, Set<String>> getWordsWithLemmas(String text) {
-        Map<String, Set<String>> result = new HashMap<>();
-        String[] words = getWordsArray(text);
-        for (String word : words) {
-            Set<String> lemmas = luceneMorphology.getMorphInfo(word)
-                    .stream()
-                    .filter(l -> !isAuxiliaryPartOfSpeech(l) && l.length() > 1)
-                    .map(this::getWordFromMorphInfo)
-                    .collect(Collectors.toSet());
-            result.put(word, lemmas);
-        }
-        return result;
-    }
-
     private String[] getWordsArray(String text) {
         return cleaningText(text).split(" ");
     }
@@ -79,5 +64,13 @@ public class MorphologyServiceImpl implements MorphologyService {
                 lemmaStorage.put(lemma, 1);
             }
         }
+    }
+
+    public List<String> getLemmas(String word) {
+        return luceneMorphology.getMorphInfo(word)
+                .stream()
+                .filter(w -> !isAuxiliaryPartOfSpeech(w) && w.length() > 1)
+                .map(this::getWordFromMorphInfo)
+                .toList();
     }
 }

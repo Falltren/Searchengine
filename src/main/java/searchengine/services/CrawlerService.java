@@ -143,7 +143,8 @@ public class CrawlerService extends RecursiveAction {
             }
             pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(url), connection.response().statusCode(), content);
             System.out.println(url);
-            Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(content));
+            String text = document.body().text();
+            Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(text));
             Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
             indexService.addIndex(pageEntity, lemmasWithRank);
 

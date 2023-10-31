@@ -1,6 +1,7 @@
 package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import searchengine.dto.search.SearchData;
@@ -17,6 +18,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SearchServiceImpl implements SearchService {
 
     private final MorphologyService morphologyService;
@@ -53,20 +55,19 @@ public class SearchServiceImpl implements SearchService {
 
     private Map<PageEntity, Float> calculateRelevance(Map<PageEntity, Set<IndexEntity>> pages) {
         Map<PageEntity, Float> relevance = new HashMap<>();
-        if (pages.size() > 0) {
-            float maxAbsoluteRelevance = 0;
-            for (Map.Entry<PageEntity, Set<IndexEntity>> entry : pages.entrySet()) {
-                float sumRelevance = (float) entry.getValue().stream().mapToDouble(IndexEntity::getRank).sum();
-                relevance.put(entry.getKey(), sumRelevance);
-                if (sumRelevance > maxAbsoluteRelevance) {
-                    maxAbsoluteRelevance = sumRelevance;
-                }
+        float maxAbsoluteRelevance = 0;
+        for (Map.Entry<PageEntity, Set<IndexEntity>> entry : pages.entrySet()) {
+            float sumRelevance = (float) entry.getValue().stream().mapToDouble(IndexEntity::getRank).sum();
+            relevance.put(entry.getKey(), sumRelevance);
+            if (sumRelevance > maxAbsoluteRelevance) {
+                maxAbsoluteRelevance = sumRelevance;
             }
-            float finalMaxAbsoluteRelevance = maxAbsoluteRelevance;
-            relevance = relevance.entrySet()
-                    .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() / finalMaxAbsoluteRelevance));
         }
+        float finalMaxAbsoluteRelevance = maxAbsoluteRelevance;
+        relevance = relevance.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() / finalMaxAbsoluteRelevance));
+
         return relevance;
     }
 
@@ -153,28 +154,14 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String getSnippet(String content, String query) {
-        String text = Jsoup.parse(content).select("body").text();
-        Map<String, Set<String>> wordsWithLemmas = morphologyService.getWordsWithLemmas(text);
+        String text = Jsoup.parse(content).body().text();
         Set<String> lemmas = new HashSet<>(splitTextIntoLemmas(query));
-        List<String> words = new ArrayList<>();
-        for (Map.Entry<String, Set<String>> entry : wordsWithLemmas.entrySet()) {
-            if (lemmas.stream().anyMatch(e -> entry.getValue().contains(e))) {
-                words.add(entry.getKey());
-                lemmas.removeAll(entry.getValue());
-            }
-        }
+        List<String> foundWords = getFoundWords(text, lemmas);
+        System.out.println(foundWords);
         String[] wordsArray = text.split(" ");
-        Map<Integer, String> wordsWithPosition = getWordsWithPosition(words, wordsArray);
+        Map<Integer, String> wordsWithPosition = getWordsWithPosition(foundWords, wordsArray);
         Map<Integer, String> wordsForSnippet = removingAdjacentPosition(wordsWithPosition);
-//        int countFoundWords = wordsForSnippet.size();
-//        StringBuilder stringBuilder = new StringBuilder();
-//        for (Map.Entry<Integer, String> entry : wordsForSnippet.entrySet()) {
-//            String[] wordArrayLine = getWordsArrayForOneLine(entry, wordsArray, countFoundWords);
-//            String line = createWordsLine(wordArrayLine, words);
-//            stringBuilder.append(line).append("...").append("\n");
-//            System.out.println(line);
-//        }
-        return concatenateLines(wordsForSnippet, wordsArray, words);
+        return concatenateLines(wordsForSnippet, wordsArray, foundWords);
     }
 
     private String concatenateLines(Map<Integer, String> wordsForSnippet, String[] wordsArray, List<String> words) {
@@ -188,7 +175,6 @@ public class SearchServiceImpl implements SearchService {
             String[] wordArrayLine = getWordsArrayForOneLine(entry, wordsArray, countFoundWords);
             String line = createWordsLine(wordArrayLine, words);
             stringBuilder.append(line).append("...").append("\n");
-            System.out.println(line);
             linesCount++;
         }
         return stringBuilder.toString();
@@ -204,7 +190,7 @@ public class SearchServiceImpl implements SearchService {
                 isMatchWord = foundWords.stream().anyMatch(e1 -> wordsFrom.stream().anyMatch(e1::equals));
             }
             if (testedWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1 || isMatchWord) {
-                return word;
+                return testedWord;
             }
         }
         return "";
@@ -277,9 +263,9 @@ public class SearchServiceImpl implements SearchService {
             }
             if (countFoundWords == 1 && i <= position - 30) {
                 return position;
-            } else if (countFoundWords == 2 && i <= position - 15) {
+            } else if (countFoundWords == 2 && i <= position - 14) {
                 return position;
-            } else if (i <= position - 9) {
+            } else if (i <= position - 8) {
                 return position;
             }
         }
@@ -316,5 +302,17 @@ public class SearchServiceImpl implements SearchService {
             }
         }
         return result;
+    }
+
+    private List<String> getFoundWords(String text, Set<String> lemmas) {
+        List<String> foundWords = new ArrayList<>();
+        String[] words = morphologyService.cleaningText(text).split(" ");
+        for (String word : words) {
+            List<String> lemmaList = morphologyService.getLemmas(word);
+            if (!lemmaList.isEmpty() && lemmas.stream().anyMatch(e1 -> lemmaList.stream().anyMatch(e1::equals))) {
+                foundWords.add(word);
+            }
+        }
+        return foundWords;
     }
 }

@@ -31,31 +31,35 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private Map<PageEntity, Set<IndexEntity>> findPages(String query, String site) {
-        Map<PageEntity, Set<IndexEntity>> result = new HashMap<>();
+        Map<PageEntity, Set<IndexEntity>> foundPages = new HashMap<>();
         for (SiteEntity siteEntity : selectSite(site)) {
             List<LemmaEntity> lemmaEntities = getSortedLemmaEntities(query, siteEntity);
             Map<PageEntity, Set<IndexEntity>> pagesWithIndexes = new HashMap<>();
             for (int i = 0; i < lemmaEntities.size(); i++) {
                 List<IndexEntity> indexes = indexService.getIndexesByLemma(lemmaEntities.get(i));
                 Map<PageEntity, IndexEntity> pair = new HashMap<>();
-                for (IndexEntity index : indexes) {
-                    PageEntity pageEntity = index.getPageEntity();
-                    pair.put(pageEntity, index);
-                    if (i == 0) {
-                        pagesWithIndexes.put(pageEntity, Stream.of(index).collect(Collectors.toSet()));
-                    }
-                }
-                pagesWithIndexes = calculateResultMap(pair, pagesWithIndexes);
+                addPages(indexes, pair, pagesWithIndexes, i);
+                pagesWithIndexes = getMatchesPages(pair, pagesWithIndexes);
             }
-            result.putAll(pagesWithIndexes);
+            foundPages.putAll(pagesWithIndexes);
         }
-        return result;
+        return foundPages;
     }
 
+    private void addPages(List<IndexEntity> indexes, Map<PageEntity, IndexEntity> pair,
+                          Map<PageEntity, Set<IndexEntity>> pageWithIndexes, int index) {
+        for (IndexEntity indexEntity : indexes) {
+            PageEntity pageEntity = indexEntity.getPageEntity();
+            pair.put(pageEntity, indexEntity);
+            if (index == 0) {
+                pageWithIndexes.put(pageEntity, Stream.of(indexEntity).collect(Collectors.toSet()));
+            }
+        }
+    }
 
-    private Map<PageEntity, Float> calculateRelevance(Map<PageEntity, Set<IndexEntity>> pages) {
+    private Map<PageEntity, Float> calculateRelevancePages(Map<PageEntity, Set<IndexEntity>> pages) {
         Map<PageEntity, Float> relevance = new HashMap<>();
-        float maxAbsoluteRelevance = 0;
+        float maxAbsoluteRelevance = 0f;
         for (Map.Entry<PageEntity, Set<IndexEntity>> entry : pages.entrySet()) {
             float sumRelevance = (float) entry.getValue().stream().mapToDouble(IndexEntity::getRank).sum();
             relevance.put(entry.getKey(), sumRelevance);
@@ -67,7 +71,6 @@ public class SearchServiceImpl implements SearchService {
         relevance = relevance.entrySet()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() / finalMaxAbsoluteRelevance));
-
         return relevance;
     }
 
@@ -81,25 +84,24 @@ public class SearchServiceImpl implements SearchService {
         } else {
             return List.of(siteService.findSiteByUrl(site).orElseThrow());
         }
-
     }
 
     private List<LemmaEntity> getSortedLemmaEntities(String query, SiteEntity siteEntity) {
         List<String> lemmas = splitTextIntoLemmas(query);
-        List<LemmaEntity> lemmaEntities = new ArrayList<>();
+        List<LemmaEntity> sortedLemmaEntities = new ArrayList<>();
         for (String lemma : lemmas) {
             Optional<LemmaEntity> lemmaEntity = lemmaService.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
             if (lemmaEntity.isEmpty()) {
                 return new ArrayList<>();
             }
-            lemmaEntities.add(lemmaEntity.get());
+            sortedLemmaEntities.add(lemmaEntity.get());
         }
-        Collections.sort(lemmaEntities, Comparator.comparing(LemmaEntity::getFrequency));
-        return lemmaEntities;
+        sortedLemmaEntities.sort(Comparator.comparing(LemmaEntity::getFrequency));
+        return sortedLemmaEntities;
     }
 
-    private Map<PageEntity, Set<IndexEntity>> calculateResultMap(Map<PageEntity, IndexEntity> from,
-                                                                 Map<PageEntity, Set<IndexEntity>> to) {
+    private Map<PageEntity, Set<IndexEntity>> getMatchesPages(Map<PageEntity, IndexEntity> from,
+                                                              Map<PageEntity, Set<IndexEntity>> to) {
         Map<PageEntity, Set<IndexEntity>> result = new HashMap<>();
         for (Map.Entry<PageEntity, Set<IndexEntity>> entry : to.entrySet()) {
             if (from.containsKey(entry.getKey())) {
@@ -120,7 +122,7 @@ public class SearchServiceImpl implements SearchService {
 
     public SearchResponse searching(String query, String site, Integer offset, Integer limit) {
         Map<PageEntity, Set<IndexEntity>> pagesWithIndexes = findPages(query, site);
-        Map<PageEntity, Float> pagesWithRelevance = calculateRelevance(pagesWithIndexes);
+        Map<PageEntity, Float> pagesWithRelevance = calculateRelevancePages(pagesWithIndexes);
         Map<PageEntity, Float> pagesResult = getSortedPagesByRelevance(pagesWithRelevance);
         SearchResponse searchResponse = new SearchResponse();
         searchResponse.setResult(true);
@@ -133,7 +135,7 @@ public class SearchServiceImpl implements SearchService {
         for (Map.Entry<PageEntity, Float> entry : pagesResult.entrySet()) {
             SearchData searchData = new SearchData();
             searchData.setUri(entry.getKey().getPath());
-            String sitePath = entry.getKey().getSiteEntity().getUrl().substring(0, entry.getKey().getSiteEntity().getUrl().length() - 1);
+            String sitePath = getSitePath(entry.getKey());
             searchData.setSite(sitePath);
             searchData.setSiteName(entry.getKey().getSiteEntity().getName());
             searchData.setTitle(getTitleFromPage(entry.getKey()));
@@ -157,7 +159,6 @@ public class SearchServiceImpl implements SearchService {
         String text = Jsoup.parse(content).body().text();
         Set<String> lemmas = new HashSet<>(splitTextIntoLemmas(query));
         List<String> foundWords = getFoundWords(text, lemmas);
-        System.out.println(foundWords);
         String[] wordsArray = text.split(" ");
         Map<Integer, String> wordsWithPosition = getWordsWithPosition(foundWords, wordsArray);
         Map<Integer, String> wordsForSnippet = removingAdjacentPosition(wordsWithPosition);
@@ -165,31 +166,27 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String concatenateLines(Map<Integer, String> wordsForSnippet, String[] wordsArray, List<String> words) {
-        StringBuilder stringBuilder = new StringBuilder();
         int countFoundWords = Math.min(wordsForSnippet.size(), 3);
-        int linesCount = 0;
+        Map<String, Map<Integer, Set<String>>> linesWithMatchRate = new LinkedHashMap<>();
         for (Map.Entry<Integer, String> entry : wordsForSnippet.entrySet()) {
-            if (linesCount >= 3) {
-                break;
-            }
             String[] wordArrayLine = getWordsArrayForOneLine(entry, wordsArray, countFoundWords);
             String line = createWordsLine(wordArrayLine, words);
-            stringBuilder.append(line).append("...").append("\n");
-            linesCount++;
+            Map<Integer, Set<String>> matchRate = calculateMatchRateInLine(line);
+            linesWithMatchRate.put(line, matchRate);
         }
-        return stringBuilder.toString();
+        return getBestSnippetLines(linesWithMatchRate, countFoundWords);
     }
 
     private String checkWordInText(String testedWord, List<String> foundWords) {
-        testedWord = morphologyService.cleaningText(testedWord);
-        String[] words = testedWord.split(" ");
+        String cleaningWord = morphologyService.cleaningText(testedWord);
+        String[] words = cleaningWord.split(" ");
         for (String word : foundWords) {
             boolean isMatchWord = false;
             if (words.length > 1) {
                 List<String> wordsFrom = Arrays.asList(words);
                 isMatchWord = foundWords.stream().anyMatch(e1 -> wordsFrom.stream().anyMatch(e1::equals));
             }
-            if (testedWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1 || isMatchWord) {
+            if (cleaningWord.toLowerCase(Locale.ROOT).equals(word) && words.length == 1 || isMatchWord) {
                 return testedWord;
             }
         }
@@ -224,19 +221,10 @@ public class SearchServiceImpl implements SearchService {
     private String[] getWordsArrayForOneLine(Map.Entry<Integer, String> wordWithPosition,
                                              String[] wordsArray, int countFoundWords) {
         int startPosition = findStartPositionForLine(wordWithPosition.getKey(), countFoundWords, wordsArray);
-        if (countFoundWords == 1) {
-            String[] line = new String[36];
-            System.arraycopy(wordsArray, startPosition, line, 0, 36);
-            return line;
-        } else if (countFoundWords == 2) {
-            String[] line = new String[18];
-            System.arraycopy(wordsArray, startPosition, line, 0, 18);
-            return line;
-        } else {
-            String[] line = new String[12];
-            System.arraycopy(wordsArray, startPosition, line, 0, 12);
-            return line;
-        }
+        int endPosition = findEndPositionForLine(startPosition, countFoundWords, wordsArray);
+        String[] line = new String[endPosition];
+        System.arraycopy(wordsArray, startPosition, line, 0, endPosition);
+        return line;
     }
 
     private String createWordsLine(String[] wordsArrayLine, List<String> foundWords) {
@@ -270,6 +258,16 @@ public class SearchServiceImpl implements SearchService {
             }
         }
         return position;
+    }
+
+    private int findEndPositionForLine(int startPosition, int countFoundWords, String[] wordsArray) {
+        if (countFoundWords == 1) {
+            return startPosition + 32 < wordsArray.length ? 32 : wordsArray.length - startPosition;
+        } else if (countFoundWords == 2) {
+            return startPosition + 18 < wordsArray.length ? 18 : wordsArray.length - startPosition;
+        } else {
+            return startPosition + 12 < wordsArray.length ? 12 : wordsArray.length - startPosition;
+        }
     }
 
     private Map<Integer, String> getWordsWithPosition(List<String> words, String[] wordsArray) {
@@ -314,5 +312,63 @@ public class SearchServiceImpl implements SearchService {
             }
         }
         return foundWords;
+    }
+
+    private Map<Integer, Set<String>> calculateMatchRateInLine(String line) {
+        Set<String> rate = new HashSet<>();
+        int start = -1;
+        while (start < line.length()) {
+            int next = line.indexOf("<b>", start + 1);
+            if (next >= 0) {
+                String word = line.substring(next + 3, line.indexOf("</b>", next + 1));
+                rate.addAll(splitTextIntoLemmas(word));
+                start = next + 1;
+            } else {
+                break;
+            }
+        }
+        return Map.of(rate.size(), rate);
+    }
+
+    private String getBestSnippetLines(Map<String, Map<Integer, Set<String>>> linesWithMatchRate, int countFoundWords) {
+        Set<String> lemmasPool = new HashSet<>();
+        StringBuilder stringBuilder = new StringBuilder();
+        List<Integer> matchRate = linesWithMatchRate
+                .values()
+                .stream()
+                .map(Map::keySet)
+                .flatMap(Collection::stream)
+                .sorted(Comparator.reverseOrder())
+                .limit(countFoundWords)
+                .toList();
+        if (linesWithMatchRate.size() <= 3) {
+            for (Map.Entry<String, Map<Integer, Set<String>>> entry : linesWithMatchRate.entrySet()){
+                stringBuilder.append(entry.getKey()).append("...");
+            }
+            return stringBuilder.toString();
+        }
+        for (Integer rate : matchRate) {
+            Iterator<Map.Entry<String, Map<Integer, Set<String>>>> iterator = linesWithMatchRate.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Map<Integer, Set<String>>> entry = iterator.next();
+                Set<String> lemmasFromLine = entry.getValue().values()
+                        .stream()
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toSet());
+                if (Objects.equals(entry.getValue().keySet().stream().toList().get(0), rate) &&
+                        !lemmasPool.containsAll(lemmasFromLine)) {
+                    stringBuilder.append(entry.getKey()).append("...");
+                    lemmasPool.addAll(lemmasFromLine);
+                    iterator.remove();
+                    break;
+                }
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private String getSitePath(PageEntity pageEntity) {
+        String path = pageEntity.getSiteEntity().getUrl();
+        return path.substring(0, path.length() - 1);
     }
 }

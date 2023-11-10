@@ -1,78 +1,44 @@
 package searchengine.services;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 import searchengine.config.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.repository.SiteRepository;
 import searchengine.utils.JsoupConnection;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
 
-@Component
-@Setter
-@Getter
-@Scope(value = "prototype")
 @Slf4j
+@Getter
+@RequiredArgsConstructor
 public class CrawlerService extends RecursiveAction {
 
     private static volatile boolean isNeedStop;
 
+    private static Date date;
+    @Setter
     private String url;
-
-    private static Site site;
-
-    private static Set<String> uniqueLinks = ConcurrentHashMap.newKeySet();
-
-    private SiteRepository siteRepository;
-
-    private PageService pageService;
-
-    private MorphologyService morphologyService;
-
-    private LemmaService lemmaService;
-
-    private IndexService indexService;
-
-    private JsoupConnection jsoupConnection;
-
-    public CrawlerService() {
-    }
-
-    public CrawlerService(String url, Site site, SiteRepository siteRepository, PageService pageService,
-                          MorphologyService morphologyService, LemmaService lemmaService, IndexService indexService,
-                          JsoupConnection jsoupConnection) {
-        this.url = url;
-        CrawlerService.site = site;
-        this.siteRepository = siteRepository;
-        this.pageService = pageService;
-        this.morphologyService = morphologyService;
-        this.lemmaService = lemmaService;
-        this.indexService = indexService;
-        this.jsoupConnection = jsoupConnection;
-    }
-
-    public static void setSite(Site site) {
-        CrawlerService.site = site;
-    }
+    private final Site site;
+    private static final Set<String> uniqueLinks = ConcurrentHashMap.newKeySet();
+    private final SiteService siteService;
+    private final PageService pageService;
+    private final MorphologyService morphologyService;
+    private final LemmaService lemmaService;
+    private final IndexService indexService;
+    private final JsoupConnection jsoupConnection;
 
     public static void stopCrawler() {
-        log.warn("Вызвана остановка парсинга!!!!");
+        log.warn("invoking stop indexing");
         isNeedStop = true;
     }
 
@@ -82,36 +48,6 @@ public class CrawlerService extends RecursiveAction {
 
     public static boolean getIsNeedStop() {
         return isNeedStop;
-    }
-
-    @Autowired
-    public void setPageRepository(PageService pageService) {
-        this.pageService = pageService;
-    }
-
-    @Autowired
-    public void setSiteRepository(SiteRepository siteRepository) {
-        this.siteRepository = siteRepository;
-    }
-
-    @Autowired
-    public void setMorphologyService(MorphologyService morphologyService) {
-        this.morphologyService = morphologyService;
-    }
-
-    @Autowired
-    public void setLemmaService(LemmaService lemmaService) {
-        this.lemmaService = lemmaService;
-    }
-
-    @Autowired
-    public void setIndexService(IndexService indexService) {
-        this.indexService = indexService;
-    }
-
-    @Autowired
-    public void setJsoupConnection(JsoupConnection jsoupConnection) {
-        this.jsoupConnection = jsoupConnection;
     }
 
     public static Set<String> getUniqueLinks() {
@@ -124,18 +60,14 @@ public class CrawlerService extends RecursiveAction {
         try {
             Thread.sleep(100);
             if (isNeedStop) {
-                Thread.currentThread().interrupt();
                 return;
             }
-            do {
-                uniqueLinks.add(site.getUrl());
-            } while (uniqueLinks.size() < 1);
+            uniqueLinks.add(site.getUrl());
             Connection connection = jsoupConnection.getConnection(url);
             Document document = jsoupConnection.getDocument(connection);
             Elements elements = document.select("body").select("a");
-            SiteEntity siteEntity = siteRepository.findByUrl(site.getUrl()).orElseThrow();
+            SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
             String content = document.toString();
-
             PageEntity pageEntity = new PageEntity();
             int statusCode = connection.response().statusCode();
             if (statusCode != 200) {
@@ -147,11 +79,15 @@ public class CrawlerService extends RecursiveAction {
             Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(text));
             Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
             indexService.addIndex(pageEntity, lemmasWithRank);
-
+            siteEntity.setStatusTime(getCurrentDate());
+            siteService.save(siteEntity);
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
-                if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink) && uniqueLinks.add(newAbsolutLink.toLowerCase())) {
-                    CrawlerService task = new CrawlerService(newAbsolutLink, site, siteRepository, pageService, morphologyService, lemmaService, indexService, jsoupConnection);
+                if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink)
+                        && uniqueLinks.add(newAbsolutLink.toLowerCase())) {
+                    CrawlerService task = new CrawlerService(getSite(), siteService, pageService, morphologyService,
+                            lemmaService, indexService, jsoupConnection);
+                    task.setUrl(newAbsolutLink);
                     task.fork();
                     crawlerServiceList.add(task);
                 }
@@ -174,6 +110,11 @@ public class CrawlerService extends RecursiveAction {
 
     public String getRelativeLink(String absoluteLink) {
         return absoluteLink.substring(site.getUrl().length() - 1);
+    }
+
+    private static Date getCurrentDate() {
+        date = new Date();
+        return date;
     }
 }
 

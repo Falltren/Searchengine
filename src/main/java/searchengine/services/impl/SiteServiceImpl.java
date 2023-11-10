@@ -3,6 +3,7 @@ package searchengine.services.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import searchengine.config.Site;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
 import searchengine.repository.SiteRepository;
@@ -56,6 +57,17 @@ public class SiteServiceImpl implements SiteService {
 
     public List<SiteEntity> getIndexedSites() {
         return siteRepository.findByStatus(StatusType.INDEXED);
+    }
+
+    public void stopIndexing(SiteEntity siteEntity) {
+        siteEntity.setStatus(StatusType.FAILED);
+        siteEntity.setStatusTime(new Date());
+        siteEntity.setLastError("Индексация остановлена пользователем.");
+        save(siteEntity);
+    }
+
+    public StatusType getStatus(Site site) {
+        return findSiteByUrl(site.getUrl()).orElseThrow().getStatus();
     }
 
 }

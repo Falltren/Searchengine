@@ -1,25 +1,31 @@
 package searchengine.services;
 
+import searchengine.config.Site;
 import searchengine.model.SiteEntity;
+import searchengine.model.StatusType;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface SiteService {
 
-    public void deleteSiteByUrl(String url);
+    void deleteSiteByUrl(String url);
 
-    public Optional<SiteEntity> findSiteByUrl(String url);
+    Optional<SiteEntity> findSiteByUrl(String url);
 
-    public int findPagesCountByUrl(String url);
+    int findPagesCountByUrl(String url);
 
-    public int findLemmasCountByUrl(String url);
+    int findLemmasCountByUrl(String url);
 
-    public void saveNewSite(String url, String name);
+    void saveNewSite(String url, String name);
 
-    public void save(SiteEntity siteEntity);
+    void save(SiteEntity siteEntity);
 
-    public boolean isIndexing();
+    boolean isIndexing();
 
-    public List<SiteEntity> getIndexedSites();
+    List<SiteEntity> getIndexedSites();
+
+    void stopIndexing(SiteEntity siteEntity);
+
+    StatusType getStatus(Site site);
 }

@@ -23,8 +23,8 @@ public class PageServiceImpl implements PageService {
     }
 
     @Transactional
-    public void deletePageEntityBySiteEntityAndPath(SiteEntity siteEntity, String path) {
-        pageRepository.deletePageEntityBySiteEntityAndPath(siteEntity, path);
+    public void deletePageEntity(SiteEntity siteEntity, String path) {
+        pageRepository.deleteBySiteEntityAndPath(siteEntity, path);
     }
 
 }

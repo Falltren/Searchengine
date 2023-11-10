@@ -8,6 +8,6 @@ import searchengine.model.SiteEntity;
 @Repository
 public interface PageRepository extends JpaRepository<PageEntity, Integer> {
 
-    void deletePageEntityBySiteEntityAndPath(SiteEntity siteEntity, String path);
+    void deleteBySiteEntityAndPath(SiteEntity siteEntity, String path);
 
 }

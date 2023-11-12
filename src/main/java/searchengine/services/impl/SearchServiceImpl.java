@@ -1,11 +1,12 @@
 package searchengine.services.impl;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
+import searchengine.dto.search.ErrorSearch;
 import searchengine.dto.search.SearchData;
 import searchengine.dto.search.SearchResponse;
+import searchengine.dto.search.SuccessfulSearch;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
@@ -18,7 +19,6 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SearchServiceImpl implements SearchService {
 
     private final MorphologyService morphologyService;
@@ -121,33 +121,41 @@ public class SearchServiceImpl implements SearchService {
     }
 
     public SearchResponse searching(String query, String site, Integer offset, Integer limit) {
+        if (query.isBlank()) {
+            return new ErrorSearch(false, "Задан пустой поисковый запрос");
+        }
         Map<PageEntity, Set<IndexEntity>> pagesWithIndexes = findPages(query, site);
         Map<PageEntity, Float> pagesWithRelevance = calculateRelevancePages(pagesWithIndexes);
         Map<PageEntity, Float> pagesResult = getSortedPagesByRelevance(pagesWithRelevance);
-        SearchResponse searchResponse = new SearchResponse();
-        searchResponse.setResult(true);
+        SuccessfulSearch successfulSearch = new SuccessfulSearch();
+        successfulSearch.setResult(true);
         if (limit > 0) {
-            searchResponse.setCount(pagesResult.keySet().size());
+            successfulSearch.setCount(pagesResult.keySet().size());
         } else {
-            searchResponse.setCount(limit);
+            successfulSearch.setCount(limit);
         }
-        List<SearchData> data = searchResponse.getData();
+        List<SearchData> data = successfulSearch.getData();
         for (Map.Entry<PageEntity, Float> entry : pagesResult.entrySet()) {
-            SearchData searchData = new SearchData();
-            searchData.setUri(entry.getKey().getPath());
-            String sitePath = getSitePath(entry.getKey());
-            searchData.setSite(sitePath);
-            searchData.setSiteName(entry.getKey().getSiteEntity().getName());
-            searchData.setTitle(getTitleFromPage(entry.getKey()));
-            searchData.setRelevance(entry.getValue());
-            searchData.setSnippet(getSnippet(entry.getKey().getContent(), query));
+            SearchData searchData = createSearchDataObject(entry, query);
             if (data.size() == limit) {
                 break;
             }
             data.add(searchData);
         }
-        searchResponse.setData(data.stream().skip(offset).collect(Collectors.toList()));
-        return searchResponse;
+        successfulSearch.setData(data.stream().skip(offset).collect(Collectors.toList()));
+        return successfulSearch;
+    }
+
+    private SearchData createSearchDataObject(Map.Entry<PageEntity, Float> entry, String query) {
+        SearchData searchData = new SearchData();
+        searchData.setUri(entry.getKey().getPath());
+        String sitePath = getSitePath(entry.getKey());
+        searchData.setSite(sitePath);
+        searchData.setSiteName(entry.getKey().getSiteEntity().getName());
+        searchData.setTitle(getTitleFromPage(entry.getKey()));
+        searchData.setRelevance(entry.getValue());
+        searchData.setSnippet(getSnippet(entry.getKey().getContent(), query));
+        return searchData;
     }
 
     private String getTitleFromPage(PageEntity pageEntity) {
@@ -342,7 +350,7 @@ public class SearchServiceImpl implements SearchService {
                 .limit(countFoundWords)
                 .toList();
         if (linesWithMatchRate.size() <= 3) {
-            for (Map.Entry<String, Map<Integer, Set<String>>> entry : linesWithMatchRate.entrySet()){
+            for (Map.Entry<String, Map<Integer, Set<String>>> entry : linesWithMatchRate.entrySet()) {
                 stringBuilder.append(entry.getKey()).append("...");
             }
             return stringBuilder.toString();

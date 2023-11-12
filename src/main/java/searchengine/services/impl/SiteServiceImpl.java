@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.config.Site;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
-import searchengine.repository.SiteRepository;
+import searchengine.repositories.SiteRepository;
 import searchengine.services.SiteService;
 
 import java.util.Date;
@@ -38,7 +38,7 @@ public class SiteServiceImpl implements SiteService {
         return optionalSiteEntity.map(siteEntity -> siteEntity.getLemmas().size()).orElse(0);
     }
 
-    public void saveNewSite(String url, String name) {
+    public void createNewSite(String url, String name) {
         SiteEntity siteEntity = new SiteEntity();
         siteEntity.setUrl(url);
         siteEntity.setName(name);

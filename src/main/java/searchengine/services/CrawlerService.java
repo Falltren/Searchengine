@@ -24,7 +24,6 @@ import java.util.concurrent.RecursiveAction;
 public class CrawlerService extends RecursiveAction {
 
     private static volatile boolean isNeedStop;
-
     private static Date date;
     @Setter
     private String url;

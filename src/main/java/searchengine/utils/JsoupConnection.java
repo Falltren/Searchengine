@@ -34,7 +34,7 @@ public class JsoupConnection {
                 .get();
     }
 
-    public Connection getConnection(String url){
+    public Connection getConnection(String url) {
         return Jsoup.connect(url).timeout(timeout);
     }
 }

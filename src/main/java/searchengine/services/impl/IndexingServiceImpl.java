@@ -16,7 +16,6 @@ import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 import searchengine.model.StatusType;
 import searchengine.services.*;
-import searchengine.utils.ForkJoinManager;
 import searchengine.utils.JsoupConnection;
 
 import java.io.IOException;
@@ -35,6 +34,7 @@ public class IndexingServiceImpl implements IndexingService {
     private final IndexService indexService;
     private final MorphologyService morphologyService;
     private final JsoupConnection jsoupConnection;
+    private final ForkJoinPool forkJoinPool;
 
 
     @Override
@@ -49,12 +49,11 @@ public class IndexingServiceImpl implements IndexingService {
                 if (CrawlerService.getIsNeedStop()) {
                     return;
                 }
-                ForkJoinPool forkJoinPool = ForkJoinManager.getForkJoinPool();
                 CrawlerService crawlerService = new CrawlerService(site, siteService, pageService, morphologyService,
                         lemmaService, indexService, jsoupConnection);
                 crawlerService.setUrl(site.getUrl());
                 siteService.deleteSiteByUrl(site.getUrl());
-                siteService.saveNewSite(site.getUrl(), site.getName());
+                siteService.createNewSite(site.getUrl(), site.getName());
                 forkJoinPool.invoke(crawlerService);
                 changeSiteEntityStatus(site, crawlerService);
                 log.info("статус сайта {} изменен на {}", site.getUrl(), siteService.getStatus(site));

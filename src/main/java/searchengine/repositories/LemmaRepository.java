@@ -1,4 +1,4 @@
-package searchengine.repository;
+package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -10,6 +10,6 @@ import java.util.Optional;
 @Repository
 public interface LemmaRepository extends JpaRepository<LemmaEntity, Integer> {
 
-    Optional<LemmaEntity> findLemmaEntityByLemmaAndSiteEntity(String lemma, SiteEntity siteEntity);
+    Optional<LemmaEntity> findByLemmaAndSiteEntity(String lemma, SiteEntity siteEntity);
 
 }

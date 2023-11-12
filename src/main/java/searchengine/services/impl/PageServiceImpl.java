@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.repository.PageRepository;
+import searchengine.repositories.PageRepository;
 import searchengine.services.PageService;
 
 @Service

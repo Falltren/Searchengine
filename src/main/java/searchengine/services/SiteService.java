@@ -17,7 +17,7 @@ public interface SiteService {
 
     int findLemmasCountByUrl(String url);
 
-    void saveNewSite(String url, String name);
+    void createNewSite(String url, String name);
 
     void save(SiteEntity siteEntity);
 

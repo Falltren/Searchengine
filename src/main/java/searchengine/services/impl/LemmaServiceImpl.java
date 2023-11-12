@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.model.LemmaEntity;
 import searchengine.model.SiteEntity;
-import searchengine.repository.LemmaRepository;
+import searchengine.repositories.LemmaRepository;
 import searchengine.services.LemmaService;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,6 @@ public class LemmaServiceImpl implements LemmaService {
     }
 
     public Optional<LemmaEntity> findLemmaEntityByLemmaAndSiteEntity(String lemma, SiteEntity siteEntity) {
-        return lemmaRepository.findLemmaEntityByLemmaAndSiteEntity(lemma, siteEntity);
+        return lemmaRepository.findByLemmaAndSiteEntity(lemma, siteEntity);
     }
 }

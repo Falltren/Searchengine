@@ -1,7 +1,7 @@
 package searchengine.services;
 
 import searchengine.config.Site;
-import searchengine.dto.response.IndexingResponse;
+import searchengine.dto.indexation.IndexingResponse;
 
 public interface IndexingService {
 

@@ -1,4 +1,4 @@
-package searchengine.dto.response;
+package searchengine.dto.indexation;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

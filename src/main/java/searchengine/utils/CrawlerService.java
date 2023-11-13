@@ -1,4 +1,4 @@
-package searchengine.services;
+package searchengine.utils;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -8,11 +8,12 @@ import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import searchengine.config.JsoupConnection;
 import searchengine.config.Site;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.utils.JsoupConnection;
+import searchengine.services.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

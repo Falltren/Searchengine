@@ -21,6 +21,8 @@ import searchengine.config.JsoupConnection;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 
 @Service
@@ -37,7 +39,6 @@ public class IndexingServiceImpl implements IndexingService {
     private final JsoupConnection jsoupConnection;
     private final ForkJoinPool forkJoinPool;
 
-
     @Override
     public IndexingResponse startIndexing() {
         log.info("indexing of all sites has started");
@@ -45,22 +46,24 @@ public class IndexingServiceImpl implements IndexingService {
         if (siteService.isIndexing()) {
             return new FailIndexing("Индексация уже запущена");
         }
-        new Thread(() -> {
-            for (Site site : sitesList.getSites()) {
+        ExecutorService executorService = Executors.newFixedThreadPool(sitesList.getSites().size());
+        for (Site site : sitesList.getSites()) {
+            executorService.execute(() -> {
                 if (CrawlerService.getIsNeedStop()) {
                     return;
                 }
+                siteService.deleteSiteByUrl(site.getUrl());
+                siteService.createNewSite(site.getUrl(), site.getName());
                 CrawlerService crawlerService = new CrawlerService(site, siteService, pageService, morphologyService,
                         lemmaService, indexService, jsoupConnection);
                 crawlerService.setUrl(site.getUrl());
-                siteService.deleteSiteByUrl(site.getUrl());
-                siteService.createNewSite(site.getUrl(), site.getName());
                 forkJoinPool.invoke(crawlerService);
                 changeSiteEntityStatus(site, crawlerService);
                 log.info("статус сайта {} изменен на {}", site.getUrl(), siteService.getStatus(site));
-                CrawlerService.getUniqueLinks().clear();
-            }
-        }).start();
+            });
+            CrawlerService.getUniqueLinks().clear();
+        }
+        executorService.shutdown();
         return new SuccessfulIndexation();
     }
 
@@ -69,19 +72,16 @@ public class IndexingServiceImpl implements IndexingService {
         if (!siteService.isIndexing()) {
             return new FailIndexing("Индексация не запущена");
         }
-        new Thread(() -> {
-            CrawlerService.stopCrawler();
-            for (Site site : sitesList.getSites()) {
-                SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
-                if (siteEntity.getStatus().equals(StatusType.INDEXING)) {
-                    siteService.stopIndexing(siteEntity);
-                }
+        CrawlerService.stopCrawler();
+        for (Site site : sitesList.getSites()) {
+            SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
+            if (siteEntity.getStatus().equals(StatusType.INDEXING)) {
+                siteService.stopIndexing(siteEntity);
             }
-        }).start();
+        }
         return new SuccessfulIndexation();
     }
 
-    @Transactional
     public IndexingResponse indexingOnePage(String url) {
         Site site = isPageFromSiteList(url);
         if (site.getUrl() == null) {
@@ -116,10 +116,8 @@ public class IndexingServiceImpl implements IndexingService {
         SiteEntity siteEntity = siteService.findSiteByUrl(site.getUrl()).orElseThrow();
         if (crawlerService.isDone() && !CrawlerService.getIsNeedStop()) {
             siteEntity.setStatus(StatusType.INDEXED);
-        } else {
-            siteEntity.setStatus(StatusType.FAILED);
+            siteService.save(siteEntity);
         }
-        siteService.save(siteEntity);
     }
 
     private String getPagePath(Site site, String url) {

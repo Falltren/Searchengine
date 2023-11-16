@@ -1,11 +1,9 @@
 package searchengine.dto.indexation;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class FailIndexing extends IndexingResponse {
+public class FailIndexing implements IndexingResponse {
     private final boolean result;
     private final String error;
 

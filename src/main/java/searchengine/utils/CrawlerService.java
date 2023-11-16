@@ -74,13 +74,15 @@ public class CrawlerService extends RecursiveAction {
                 content = "";
             }
             pageService.saveNewPage(pageEntity, siteEntity, getRelativeLink(url), connection.response().statusCode(), content);
-            System.out.println(url);
+            log.info("added page with url {}", url);
             String text = document.body().text();
             Map<String, Integer> lemmasFromPage = morphologyService.collectLemmas(morphologyService.cleaningText(text));
             Map<LemmaEntity, Integer> lemmasWithRank = lemmaService.addLemma(lemmasFromPage, siteEntity);
             indexService.addIndex(pageEntity, lemmasWithRank);
             siteEntity.setStatusTime(getCurrentDate());
-            siteService.save(siteEntity);
+            if (!isNeedStop) {
+                siteService.save(siteEntity);
+            }
             for (Element element : elements) {
                 String newAbsolutLink = element.absUrl("href");
                 if (newAbsolutLink.startsWith(site.getUrl()) && !checkEndsLink(newAbsolutLink)

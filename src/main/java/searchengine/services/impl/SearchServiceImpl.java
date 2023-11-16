@@ -257,12 +257,9 @@ public class SearchServiceImpl implements SearchService {
             if (textArray[i].contains(".")) {
                 return i + 1;
             }
-            if (countFoundWords == 1 && i <= position - 30) {
-                return position;
-            } else if (countFoundWords == 2 && i <= position - 14) {
-                return position;
-            } else if (i <= position - 8) {
-                return position;
+            if ((countFoundWords == 1 && i <= position - 30) || (countFoundWords == 2 && i <= position - 14)
+                    || (countFoundWords >= 3 && i <= position - 8)) {
+                return i;
             }
         }
         return position;
@@ -291,7 +288,10 @@ public class SearchServiceImpl implements SearchService {
 
     private Map<Integer, String> removingAdjacentPosition(Map<Integer, String> wordsWithPosition) {
         Map<Integer, String> result = new TreeMap<>(wordsWithPosition);
-        Map.Entry<Integer, String> previous = result.entrySet().stream().findFirst().orElse(null);
+        if (result.isEmpty()){
+            throw new IllegalArgumentException("wordsWithPosition must not be null");
+        }
+        Map.Entry<Integer, String> previous = result.entrySet().stream().findFirst().get();
         boolean firstCompare = true;
         Iterator<Map.Entry<Integer, String>> iterator = result.entrySet().iterator();
         while (iterator.hasNext()) {

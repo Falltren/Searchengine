@@ -52,7 +52,7 @@ public class SiteServiceImpl implements SiteService {
     }
 
     public boolean isIndexing() {
-        return siteRepository.findByStatus(StatusType.INDEXING).size() > 0;
+        return !siteRepository.findByStatus(StatusType.INDEXING).isEmpty();
     }
 
     public List<SiteEntity> getIndexedSites() {
